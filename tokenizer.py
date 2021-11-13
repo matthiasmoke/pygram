@@ -18,15 +18,18 @@ TOKEN_EXPRESSIONS = {
 class Tokenizer:
 
     token_dict = {
-        "function_def": {},
-        "class_def": {},
-        "module_code": {}
+        "function_defs": {},
+        "class_defs": {},
+        "module_code": []
     }
 
     def __init__(self, filepath):
         self._filepath = filepath
         self._syntax_tree = None
         self._module_name = ""
+
+        self._syntax_tree = self._load_syntax_tree()
+        self._ast_depth_search()
 
 
     def _load_syntax_tree(self):
@@ -43,39 +46,103 @@ class Tokenizer:
             return
         
         if tree.body is not None:
+            module_tokens = []
             for node in tree.body:
-                pass
+                if isinstance(node, _ast.FunctionDef):
+                    result = self._process_function_def(node)
+                    self.token_dict["function_defs"][result[0]] = result[1]
+
+                elif isinstance(node, _ast.ClassDef):
+                    class_name = node.name
+                    class_functions = {}
+                    class_tokens = []
+
+                    for child in node.body:
+                        if isinstance(node, _ast.FunctionDef):
+                            result = self._process_function_def(node)
+                            class_functions[result[0]] = result[1]
+                        else:
+                            self._search_tokens(child, class_tokens)
+                    
+                    self.token_dict[class_name] = {
+                        "functions_defs": class_functions,
+                        "class_code": class_tokens
+                    }
+
+                else:
+                    self._search_tokens(node, module_tokens)
+                
+            
+            self.token_dict["module_code"] = module_tokens
+
     
+    def _process_function_def(self, node):
+        method_name = node.name
+        tokens = []
+        for child in node.body:
+            self._search_tokens(child, tokens)
+
+        return (method_name, tokens)
+
 
     def _search_tokens(self, node, tokens):
         if isinstance(node, _ast.If):
             tokens.append(TOKEN_EXPRESSIONS["if"])
             self._search_tokens(node.body, tokens)
             tokens.append(TOKEN_EXPRESSIONS["endIf"])
+
         elif isinstance(node, _ast.For):
             tokens.append(TOKEN_EXPRESSIONS["for"])
             self._search_tokens(node.body, tokens)
             tokens.append(TOKEN_EXPRESSIONS["endFor"])
+
         elif isinstance(node, _ast.While):
             tokens.append(TOKEN_EXPRESSIONS["while"])
             self._search_tokens(node.body, tokens)
             tokens.append(TOKEN_EXPRESSIONS["endWhile"])
+
         elif isinstance(node, _ast.Return):
             tokens.append(TOKEN_EXPRESSIONS["return"])
+
         elif isinstance(node, _ast.Raise):
             tokens.append(TOKEN_EXPRESSIONS["raise"])
+
         elif isinstance(node, _ast.Try):
             tokens.append(TOKEN_EXPRESSIONS["try"])
+
         elif isinstance(node, _ast.ExceptHandler):
             tokens.append(TOKEN_EXPRESSIONS["except"])
+
         elif isinstance(node, _ast.Assign) or isinstance(node, _ast.AugAssign):
             if isinstance(node.value, _ast.Call):
-                tokens.append(self._extract_method_name(node.value))
-        elif isinstance(node, _ast.expr):
-            if isinstance(node.value, _ast.Call):
-                tokens.append(self._extract_method_name(node.value))
+                tokens.append(Tokenizer._process_call(node))
+
+        elif Tokenizer._check_expression_object(node) and isinstance(node[0], _ast.Expr):
+            if isinstance(node[0].value, _ast.Call):
+                tokens.append(Tokenizer._process_call(node))
+  
+    
+    @staticmethod
+    def _process_call(call_node):
+        output = "<UNKNOWN>"
+        try:
+            func = call_node.value.func
+            output = "<UNKNOWN>"
+            if hasattr(func, "id"):
+                output = func.id
+            elif hasattr(func, "attr"):
+                output = func.attr
+        except AttributeError:
+            return output
         
-    
-    def _extract_method_name(call_node):
-        return call_node.value.func.id
-    
+        return output
+
+    @staticmethod
+    def _check_expression_object(node):
+        try:
+            test = node[0]
+            return True
+        except TypeError:
+            return False
+
+
