@@ -78,27 +78,33 @@ class Tokenizer:
     
     def _process_function_def(self, node):
         method_name = node.name
-        tokens = []
-        for child in node.body:
-            self._search_tokens(child, tokens)
-
+        tokens = self._search_node_body(node.body)
         return (method_name, tokens)
+
+
+    def _search_node_body(self, node_body, tokens=None):
+        if tokens is None:
+            tokens = []
+
+        for child in node_body:
+            self._search_tokens(child, tokens)
+        return tokens
 
 
     def _search_tokens(self, node, tokens):
         if isinstance(node, _ast.If):
             tokens.append(TOKEN_EXPRESSIONS["if"])
-            self._search_tokens(node.body, tokens)
+            self._search_node_body(node.body, tokens)
             tokens.append(TOKEN_EXPRESSIONS["endIf"])
 
         elif isinstance(node, _ast.For):
             tokens.append(TOKEN_EXPRESSIONS["for"])
-            self._search_tokens(node.body, tokens)
+            self._search_node_body(node.body, tokens)
             tokens.append(TOKEN_EXPRESSIONS["endFor"])
 
         elif isinstance(node, _ast.While):
             tokens.append(TOKEN_EXPRESSIONS["while"])
-            self._search_tokens(node.body, tokens)
+            self._search_node_body(node.body, tokens)
             tokens.append(TOKEN_EXPRESSIONS["endWhile"])
 
         elif isinstance(node, _ast.Return):
@@ -109,16 +115,17 @@ class Tokenizer:
 
         elif isinstance(node, _ast.Try):
             tokens.append(TOKEN_EXPRESSIONS["try"])
+            self._search_node_body(node.body, tokens)
 
         elif isinstance(node, _ast.ExceptHandler):
             tokens.append(TOKEN_EXPRESSIONS["except"])
 
-        elif isinstance(node, _ast.Assign) or isinstance(node, _ast.AugAssign):
+        elif (isinstance(node, _ast.Assign) or isinstance(node, _ast.AugAssign)):
             if isinstance(node.value, _ast.Call):
                 tokens.append(Tokenizer._process_call(node))
 
-        elif Tokenizer._check_expression_object(node) and isinstance(node[0], _ast.Expr):
-            if isinstance(node[0].value, _ast.Call):
+        elif isinstance(node, _ast.Expr):
+            if isinstance(node.value, _ast.Call):
                 tokens.append(Tokenizer._process_call(node))
   
     
@@ -137,12 +144,5 @@ class Tokenizer:
         
         return output
 
-    @staticmethod
-    def _check_expression_object(node):
-        try:
-            test = node[0]
-            return True
-        except TypeError:
-            return False
 
 
