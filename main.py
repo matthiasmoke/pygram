@@ -31,6 +31,7 @@ def main():
 def test():
     sample_file = os.getcwd() + '/test_project/samples/sample_file.py'
     tokenizer = Tokenizer(sample_file)
+    print(str(tokenizer))
 
 if __name__ == '__main__':
     test()

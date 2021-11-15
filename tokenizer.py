@@ -5,6 +5,7 @@ import os
 TOKEN_EXPRESSIONS = {
     "if": "<IF>",
     "endIf": "<ENDIF>",
+    "else": "<ELSE>",
     "for": "<FOR>",
     "endFor": "<ENDFOR>",
     "while": "<WHILE>",
@@ -30,7 +31,50 @@ class Tokenizer:
 
         self._syntax_tree = self._load_syntax_tree()
         self._ast_depth_search()
+    
+    def __str__(self) -> str:
+        output = str(self._filepath) + "\n\n"
+        functions_defs = self.token_dict["function_defs"]
+        class_defs = self.token_dict["class_defs"]
+        module_code = self.token_dict["module_code"]
 
+
+        if bool(functions_defs):
+            output += "[function definitions]\n"
+
+            for key, tokens in functions_defs.items():
+                output += "\t{}()\n".format(key)
+                for token in tokens:
+                    output += "\t\t{}\n".format(token)
+
+
+        if bool(class_defs):
+            output += "[class definitions]\n"
+            for key, value in class_defs.items():
+                output += "\t{}\n".format(key)
+                class_functions = value["function_defs"]
+                class_code = value["class_code"]
+
+                if bool(class_functions):
+                    output += "\t\t[function definitions]\n"
+
+                    for key, tokens in functions_defs.items():
+                        output += "\t\t\t{}()\n".format(key)
+                        for token in tokens:
+                            output += "\t\t\t\t{}\n".format(token)
+                
+                if len(class_code):
+                    output += "\tclass code:\n"
+                    for token in class_code:
+                        output += "\t\t{}\n".format(token)
+        
+        if len(module_code):
+            output += "[module code]\n"
+            for token in module_code:
+                output += "\t{}\n".format(token)
+        
+        return output
+        
 
     def _load_syntax_tree(self):
         if os.path.isfile(self._filepath):
@@ -65,7 +109,7 @@ class Tokenizer:
                             self._search_tokens(child, class_tokens)
                     
                     self.token_dict[class_name] = {
-                        "functions_defs": class_functions,
+                        "function_defs": class_functions,
                         "class_code": class_tokens
                     }
 
@@ -95,6 +139,11 @@ class Tokenizer:
         if isinstance(node, _ast.If):
             tokens.append(TOKEN_EXPRESSIONS["if"])
             self._search_node_body(node.body, tokens)
+
+            if node.orelse:
+                tokens.append(TOKEN_EXPRESSIONS["else"])
+                self._search_node_body(node.orelse, tokens)
+
             tokens.append(TOKEN_EXPRESSIONS["endIf"])
 
         elif isinstance(node, _ast.For):
