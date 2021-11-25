@@ -2,19 +2,7 @@ import ast
 import _ast
 import os
 
-TOKEN_EXPRESSIONS = {
-    "if": "<IF>",
-    "endIf": "<ENDIF>",
-    "else": "<ELSE>",
-    "for": "<FOR>",
-    "endFor": "<ENDFOR>",
-    "while": "<WHILE>",
-    "endWhile": "<ENDWHILE>",
-    "return": "<RETURN>",
-    "raise": "<RAISE>",
-    "try": "<TRY>",
-    "except": "<EXCEPT>"
-}
+from tokens import Tokens
 
 class Tokenizer:
 
@@ -32,7 +20,7 @@ class Tokenizer:
         self._syntax_tree = self._load_syntax_tree()
         self._ast_depth_search()
     
-    def __str__(self) -> str:
+    def __str__(self):
         output = str(self._filepath) + "\n\n"
         functions_defs = self.token_dict["function_defs"]
         class_defs = self.token_dict["class_defs"]
@@ -137,37 +125,37 @@ class Tokenizer:
 
     def _search_tokens(self, node, tokens):
         if isinstance(node, _ast.If):
-            tokens.append(TOKEN_EXPRESSIONS["if"])
+            tokens.append(Tokens.IF.value)
             self._search_node_body(node.body, tokens)
 
             if node.orelse:
-                tokens.append(TOKEN_EXPRESSIONS["else"])
+                tokens.append(Tokens.ELSE.value)
                 self._search_node_body(node.orelse, tokens)
 
-            tokens.append(TOKEN_EXPRESSIONS["endIf"])
+            tokens.append(Tokens.ENDIF.value)
 
         elif isinstance(node, _ast.For):
-            tokens.append(TOKEN_EXPRESSIONS["for"])
+            tokens.append(Tokens.FOR.value)
             self._search_node_body(node.body, tokens)
-            tokens.append(TOKEN_EXPRESSIONS["endFor"])
+            tokens.append(Tokens.ENDFOR.value)
 
         elif isinstance(node, _ast.While):
-            tokens.append(TOKEN_EXPRESSIONS["while"])
+            tokens.append(Tokens.WHILE.value)
             self._search_node_body(node.body, tokens)
-            tokens.append(TOKEN_EXPRESSIONS["endWhile"])
+            tokens.append(Tokens.ENDWHILE.value)
 
         elif isinstance(node, _ast.Return):
-            tokens.append(TOKEN_EXPRESSIONS["return"])
+            tokens.append(Tokens.RETURN.value)
 
         elif isinstance(node, _ast.Raise):
-            tokens.append(TOKEN_EXPRESSIONS["raise"])
+            tokens.append(Tokens.RAISE.value)
 
         elif isinstance(node, _ast.Try):
-            tokens.append(TOKEN_EXPRESSIONS["try"])
+            tokens.append(Tokens.TRY.value)
             self._search_node_body(node.body, tokens)
 
         elif isinstance(node, _ast.ExceptHandler):
-            tokens.append(TOKEN_EXPRESSIONS["except"])
+            tokens.append(Tokens.EXCEPT.value)
 
         elif (isinstance(node, _ast.Assign) or isinstance(node, _ast.AugAssign)):
             if isinstance(node.value, _ast.Call):
