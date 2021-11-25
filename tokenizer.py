@@ -159,27 +159,29 @@ class Tokenizer:
 
         elif (isinstance(node, _ast.Assign) or isinstance(node, _ast.AugAssign)):
             if isinstance(node.value, _ast.Call):
-                tokens.append(Tokenizer._process_call(node))
+                Tokenizer._process_call(node.value, tokens)
 
         elif isinstance(node, _ast.Expr):
             if isinstance(node.value, _ast.Call):
-                tokens.append(Tokenizer._process_call(node))
+                Tokenizer._process_call(node.value, tokens)
   
     
     @staticmethod
-    def _process_call(call_node):
-        output = "<UNKNOWN>"
+    def _process_call(call_node, tokens):
+        token = "<UNKNOWN>"
         try:
-            func = call_node.value.func
-            output = "<UNKNOWN>"
-            if hasattr(func, "id"):
-                output = func.id
-            elif hasattr(func, "attr"):
-                output = func.attr
-        except AttributeError:
-            return output
-        
-        return output
+            func = call_node.func
 
+            if hasattr(func, "value") and isinstance(func.value, _ast.Call):
+                Tokenizer._process_call(func.value, tokens)
+
+            if hasattr(func, "id"):
+                token = func.id +"()"
+            elif hasattr(func, "attr"):
+                token = func.attr + "()"
+        except AttributeError:
+            tokens.append(token)
+        
+        tokens.append(token)
 
 
