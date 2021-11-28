@@ -11,7 +11,11 @@ class Tokens(Enum):
     RETURN = "<RETURN>"
     RAISE = "<RAISE>"
     TRY = "<TRY>"
+    ENDTRY = "<ENDTRY>"
     EXCEPT = "<EXCEPT>"
+    ENDEXCEPT = "<ENDEXCEPT>"
+    FINALLY = "<FINALLY>"
+    ENDFINALLY = "<ENDFINALLY>"
 
     PASS = "<PASS>"
     ASSERT = "<ASSERT>"

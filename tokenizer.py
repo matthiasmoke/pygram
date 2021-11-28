@@ -151,11 +151,7 @@ class Tokenizer:
             tokens.append(Tokens.RAISE.value)
 
         elif isinstance(node, _ast.Try):
-            tokens.append(Tokens.TRY.value)
-            self._search_node_body(node.body, tokens)
-
-        elif isinstance(node, _ast.ExceptHandler):
-            tokens.append(Tokens.EXCEPT.value)
+            self._process_try_block(node, tokens)
 
         elif (isinstance(node, _ast.Assign) or isinstance(node, _ast.AugAssign)):
             if isinstance(node.value, _ast.Call):
@@ -165,6 +161,20 @@ class Tokenizer:
             if isinstance(node.value, _ast.Call):
                 Tokenizer._process_call(node.value, tokens)
   
+
+    def _process_try_block(self, try_node, tokens):
+        tokens.append(Tokens.TRY.value)
+        self._search_node_body(try_node.body, tokens)
+
+        for handler in try_node.handlers:
+            tokens.append(Tokens.EXCEPT)
+            self._search_node_body(handler.body, tokens)
+            tokens.append(Tokens.ENDEXCEPT)
+        
+        if len(try_node.finalbody):
+            tokens.append(Tokens.FINALLY)
+            self._search_node_body(try_node.finalbody, tokens)
+            tokens.append(Tokens.ENDFINALLY)
     
     @staticmethod
     def _process_call(call_node, tokens):
