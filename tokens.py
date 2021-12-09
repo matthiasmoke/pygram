@@ -17,6 +17,8 @@ class Tokens(Enum):
     FINALLY = "<FINALLY>"
     ENDFINALLY = "<ENDFINALLY>"
 
+    WITH = "<WITH>"
+    ENDWITH = "<ENDWITH>"
     PASS = "<PASS>"
     ASSERT = "<ASSERT>"
     BREAK = "<BREAK>"
