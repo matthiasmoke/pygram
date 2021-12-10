@@ -6,70 +6,39 @@ from tokens import Tokens
 
 class Tokenizer:
 
-    def __init__(self, filepath, consider_type=False):
+    def __init__(self, filepath, consider_type=True):
         self._filepath = filepath
         self._syntax_tree = None
         self._module_name = ""
-        self.token_dict = {
-            "function_defs": {},
-            "class_defs": {},
-            "module_code": []
-        }
-        self.variable_type_dict = {
-
-        }
+        self.sequence_stream = []
+        self.variable_type_dict = {}
+        self.consider_type = consider_type
 
         self._syntax_tree = self._load_syntax_tree()
         self._ast_depth_search()
     
     def __str__(self):
         output = str(self._filepath) + "\n\n"
-        functions_defs = self.token_dict["function_defs"]
-        class_defs = self.token_dict["class_defs"]
-        module_code = self.token_dict["module_code"]
 
+        for sequence in self.sequence_stream:
+            output += "["
+            for (index, token) in enumerate(sequence):
+                if index < len(sequence) - 1:
+                    output += "{}, ".format(token)
+                else:
+                    output += "{}]".format(token)
+            output += "\n"
 
-        if bool(functions_defs):
-            output += "[function definitions]\n"
-
-            for key, tokens in functions_defs.items():
-                output += "\t{}()\n".format(key)
-                for token in tokens:
-                    output += "\t\t{}\n".format(token)
-
-
-        if bool(class_defs):
-            output += "[class definitions]\n"
-            for key, value in class_defs.items():
-                output += "\t{}\n".format(key)
-                class_functions = value["function_defs"]
-                class_code = value["class_code"]
-
-                if bool(class_functions):
-                    output += "\t\t[function definitions]\n"
-
-                    for key, tokens in functions_defs.items():
-                        output += "\t\t\t{}()\n".format(key)
-                        for token in tokens:
-                            output += "\t\t\t\t{}\n".format(token)
-                
-                if len(class_code):
-                    output += "\tclass code:\n"
-                    for token in class_code:
-                        output += "\t\t{}\n".format(token)
-        
-        if len(module_code):
-            output += "[module code]\n"
-            for token in module_code:
-                output += "\t{}\n".format(token)
-        
         return output
         
+
+    def get_token_sequences(self):
+        return self.sequence_stream
 
     def _load_syntax_tree(self):
         if os.path.isfile(self._filepath):
             with open(self._filepath, "r") as source:
-                tree = ast.parse(source.read())
+                tree = ast.parse(source.read(), type_comments=self.consider_type)
                 return tree
         return None
     
@@ -84,35 +53,32 @@ class Tokenizer:
             for node in tree.body:
                 if isinstance(node, _ast.FunctionDef) or isinstance(node, _ast.AsyncFunctionDef):
                     result = self._process_function_def(node)
-                    self.token_dict["function_defs"][result[0]] = result[1]
+                    self.sequence_stream.append(result)
 
                 elif isinstance(node, _ast.ClassDef):
                     class_name = node.name
-                    class_functions = {}
+                    class_functions = []
                     class_tokens = []
 
                     for child in node.body:
-                        if isinstance(node, _ast.FunctionDef) or isinstance(node, _ast.AsyncFunctionDef):
-                            result = self._process_function_def(node)
-                            class_functions[result[0]] = result[1]
+                        if isinstance(child, _ast.FunctionDef) or isinstance(child, _ast.AsyncFunctionDef):
+                            result = self._process_function_def(child)
+                            self.sequence_stream.append(result)
                         else:
                             self._search_tokens(child, class_tokens)
                     
-                    self.token_dict[class_name] = {
-                        "function_defs": class_functions,
-                        "class_code": class_tokens
-                    }
+                    if len(class_tokens) > 0:
+                        self.sequence_stream.append(class_tokens)
 
                 else:
                     self._search_tokens(node, module_tokens)
                 
-            
-            self.token_dict["module_code"] = module_tokens
+            if len(module_tokens) > 0:
+                self.sequence_stream.append(module_tokens)
 
     
     def _process_function_def(self, node):
         tokens = []
-        method_name = node.name
 
         if isinstance(node, _ast.AsyncFunctionDef):
             tokens.append(Tokens.ASYNC.value)
@@ -120,7 +86,7 @@ class Tokenizer:
         tokens.append(Tokens.DEF.value)
         self._search_node_body(node.body, tokens)
         tokens.append(Tokens.END_DEF.value)
-        return (method_name, tokens)
+        return tokens
 
 
     def _search_node_body(self, node_body, tokens=None):
@@ -181,14 +147,17 @@ class Tokenizer:
                 self._process_call(node.value, tokens)
 
         elif isinstance(node, _ast.Expr):
-            if isinstance(node.value, _ast.Call):
-                self._process_call(node.value, tokens)
-            elif isinstance(node.value, _ast.Await):
-                tokens.append(Tokens.AWAIT.value)
-                if isinstance(node.value.value, _ast.Call):
-                    self._process_call(node.value.value, tokens)
+            self._process_expression(node, tokens)
 
   
+    def _process_expression(self, node, tokens):
+        if isinstance(node.value, _ast.Call):
+            self._process_call(node.value, tokens)
+        elif isinstance(node.value, _ast.Await):
+            tokens.append(Tokens.AWAIT.value)
+            if isinstance(node.value.value, _ast.Call):
+                self._process_call(node.value.value, tokens)
+
 
     def _process_try_block(self, try_node: _ast.Try, tokens):
         tokens.append(Tokens.TRY.value)
@@ -209,6 +178,7 @@ class Tokenizer:
             self._search_node_body(try_node.finalbody, tokens)
             tokens.append(Tokens.END_FINALLY.value)
     
+
     def _process_if_block(self, if_node: _ast.If, tokens):
             tokens.append(Tokens.IF.value)
             if if_node.test and isinstance(if_node.test, _ast.Call):
@@ -221,6 +191,7 @@ class Tokenizer:
                 self._search_node_body(if_node.orelse, tokens)
             tokens.append(Tokens.END_IF.value)
     
+
     def _process_with_block(self, with_node: _ast.With, tokens):
             tokens.append(Tokens.WITH.value)
             if len(with_node.items):
@@ -230,6 +201,7 @@ class Tokenizer:
             self._search_node_body(with_node.body, tokens)
             tokens.append(Tokens.END_WITH.value)
     
+
     def _process_call(self, call_node: _ast.Call, tokens):
         token = "<UNKNOWN>"
         type_info = ""
@@ -249,11 +221,13 @@ class Tokenizer:
                 token = func.id +"()"
             elif hasattr(func, "attr"):
                 token = func.attr + "()"
-                if hasattr(func, "value") and hasattr(func.value, "id"):
-                    variable_instance = func.value.id
-                    type_info = self.variable_type_dict.get(variable_instance, None)
-                    if type_info is not None:
-                        token = type_info + "." + token
+
+                if (self.consider_type):
+                    if hasattr(func, "value") and hasattr(func.value, "id"):
+                        variable_instance = func.value.id
+                        type_info = self.variable_type_dict.get(variable_instance, None)
+                        if type_info is not None:
+                            token = type_info + "." + token
             
         except AttributeError:
             print("Unknown attribute")
