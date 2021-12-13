@@ -2,14 +2,16 @@ import argparse
 from ast import parse
 import os
 import sys
+from typing import List
 
 from tokenizer import Tokenizer
 from TokenCountModel import TokenCountModel
 
-use_type_info = True
-tokenstream = []
-gram_size = 3
-sequence_length = 6
+use_type_info: bool = True
+tokenstream: List = []
+gram_size: int = 3
+sequence_length: int = 6
+token_count_model: TokenCountModel = None
 
 
 def create_parser():
@@ -17,6 +19,7 @@ def create_parser():
                                     description="N-Gram code analysis")
     parser.add_argument("-f", help="Analyse single Python file")
     parser.add_argument("-d", help="Analyse directory")
+    parser.add_argument("-m", help="Load model from file (.json)")
     parser.add_argument("-t", help="This flag enables processing of type annotations. The type information added to the tokens")
 
     return parser
@@ -35,6 +38,20 @@ def get_all_python_files_in_directory(path):
     return output
 
 
+def load_token_count_model_from_file(path):
+    global token_count_model
+    file_path = os.path.abspath(path)
+
+    if os.path.isfile(file_path) and file_path.endswith(".json"):
+        model = TokenCountModel.load_from_file(file_path)
+        if model is None:
+            print("Could not load file")
+        else:
+            token_count_model = model
+    else:
+        print("Not a .json file!")
+
+
 def tokenize_project(directory):
     global tokenstream, use_type_info
     python_files = get_all_python_files_in_directory(directory)
@@ -51,15 +68,8 @@ def tokenize_project(directory):
     print("Finished tokenizing project")
 
 
-
-def generate_count_model():
-    model = TokenCountModel(tokenstream=tokenstream, gram_size=gram_size, name="Test Model")
-    return model
-
-
-
 def main():
-    global tokenstream, gram_size, sequence_length, use_type_info
+    global tokenstream, gram_size, sequence_length, use_type_info, token_count_model
     if not len(sys.argv[1:]):
         print("For usage information use -h parameter")
     else:
@@ -67,6 +77,9 @@ def main():
 
         if arguments.t is not None:
             use_type_info = True
+        
+        if arguments.m is not None:
+            load_token_count_model_from_file(arguments.m)
 
         if arguments.f is not None:
             path = os.path.abspath(arguments.f)
@@ -76,18 +89,32 @@ def main():
 
         if arguments.d is not None:
             tokenize_project(arguments.d)
-            generate_count_model()
+            token_count_model = TokenCountModel(gram_size, tokenstream, name="Test Model")
 
 
 def test():
-    sample_file = os.getcwd() + '/test_project/samples'
+    sample_file = os.getcwd() + '/test_project/samples/minimal.py'
     large_sample = "/home/matthias/Projects/RingABackend/play_sequence.py"
     sample_dir = "/home/matthias/Projects/RingABackend"
     tokenize_project(sample_file)
-    model = generate_count_model()
+    model = TokenCountModel(gram_size, tokenstream, name="Test Model")
     model.save_to_file(os.path.abspath("/home/matthias/BachelorThesis/model.json"))
-    
+
+
+def test_file():
+    global tokenstream
+    sample_file = os.getcwd() + '/test_project/samples/minimal.py'
+    tokenizer = Tokenizer(sample_file, consider_type=False)
+    tokenstream = tokenizer.get_token_sequences()
+    model = TokenCountModel(gram_size, tokenstream, name="Test Model")
+    model.count_tokens()
+    model.save_to_file(os.path.abspath("/home/matthias/BachelorThesis/model.json"))
+
+def load_test():
+    model_file = os.path.abspath("/home/matthias/BachelorThesis/model.json")
+    model = TokenCountModel.load_from_file(model_file)
 
 if __name__ == '__main__':
     #main()
-    test()
+    #test()
+    load_test()

@@ -57,7 +57,6 @@ class Tokenizer:
 
                 elif isinstance(node, _ast.ClassDef):
                     class_name = node.name
-                    class_functions = []
                     class_tokens = []
 
                     for child in node.body:
