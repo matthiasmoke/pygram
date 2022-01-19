@@ -4,7 +4,7 @@ import os
 import sys
 from typing import List
 
-from tokenizer import Tokenizer
+from Tokenizer import Tokenizer
 from TokenCountModel import TokenCountModel
 
 use_type_info: bool = True
