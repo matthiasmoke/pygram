@@ -2,14 +2,13 @@ import ast
 import _ast
 import os
 
-from tokens import Tokens
+from src.tokens import Tokens
 
 class Tokenizer:
 
     def __init__(self, filepath, consider_type=True):
         self._filepath = filepath
         self._syntax_tree = None
-        self._module_name = ""
         self.sequence_stream = []
         self.variable_type_dict = {}
         self.consider_type = consider_type
@@ -35,6 +34,9 @@ class Tokenizer:
     def get_token_sequences(self):
         return self.sequence_stream
 
+    def _get_module_name(self): 
+        pass
+
     def _load_syntax_tree(self):
         if os.path.isfile(self._filepath):
             with open(self._filepath, "r") as source:
@@ -56,7 +58,6 @@ class Tokenizer:
                     self.sequence_stream.append(result)
 
                 elif isinstance(node, _ast.ClassDef):
-                    class_name = node.name
                     class_tokens = []
 
                     for child in node.body:
