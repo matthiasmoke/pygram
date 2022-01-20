@@ -7,7 +7,7 @@ from src.Tokenizer import Tokenizer
 
 from typing import Dict, List, Tuple
 
-class CLI:
+class Pygram:
 
     def __init__(self) -> None:
         self.use_type_info: bool = True
@@ -128,10 +128,10 @@ class CLI:
                     print("There already is a token count model loaded. Skipping processing of given project directory step!")
                 else:
                     print("Starting to tokenize project...")
-                    project_name, tokenstream = self.tokenize_project(arguments.d, self.use_type_info)
+                    project_name, sequence_list = self.tokenize_project(arguments.d, self.use_type_info)
                     print("Finished")
                     print("Building intermediate count model...")
-                    self.token_count_model = TokenCountModel(tokenstream, name=project_name)
+                    self.token_count_model = TokenCountModel(sequence_list, name=project_name)
                     self.token_count_model.build()
                     print("Finished")
                     if self.count_model_path:

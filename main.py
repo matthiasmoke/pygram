@@ -1,5 +1,5 @@
-from src.CLI import CLI
+from src.Pygram import Pygram
 
 if __name__ == '__main__':
-    pygram = CLI()
+    pygram = Pygram()
     pygram.start()
