@@ -1,6 +1,6 @@
 
 import json
-from typing import Dict
+from typing import Dict, List
 
 class TokenCountModel():
     
@@ -12,7 +12,7 @@ class TokenCountModel():
         self.longest_sequence_length: int = longest_sequence_length
 
     @staticmethod
-    def load_from_file(path):
+    def load_from_file(path) -> "TokenCountModel":
         with open(path, 'r') as inputfile:
             model = json.load(inputfile)
             if model is not None:
@@ -27,7 +27,7 @@ class TokenCountModel():
         return None
     
 
-    def save_to_file(self, path):
+    def save_to_file(self, path) -> None:
         with open(path, 'w') as outfile:
             json.dump({
             "project": self.name,
@@ -38,7 +38,11 @@ class TokenCountModel():
             }, outfile)
 
     
-    def build(self):
+    def build(self) -> None:
+        """
+        Builds the intermediate token count model. 
+        This means creating all respective subsequences of a token sequence and counting them.
+        """
         for value in self.token_sequences: 
             for sequence in self.token_sequences[value]:
                 self._update_sequence_metrics(sequence)
@@ -46,18 +50,31 @@ class TokenCountModel():
                     # add initial token
                     self._count_token(token)
                     token_sub_sequence = token
+                    # build subsequences of the whole sequence
                     for count in range(index + 1, len(sequence)):
                         token_sub_sequence += sequence[count]
                         self._count_token(token_sub_sequence)
+    
+
+    def get_sequence_list_without_module_info(self) -> List:
+        output: List = []
+
+        for value in self.token_sequences:
+            output += self.token_sequences[value]
+
+        return output
+
+    def get_sequence_dict(self) -> Dict:
+        return self.token_sequences
 
     
-    def _count_token(self, token_sub_sequence):
+    def _count_token(self, token_sub_sequence) -> None:
         if token_sub_sequence in self.count_model:
             self.count_model[token_sub_sequence] += 1
         else:
             self.count_model[token_sub_sequence] = 1
     
-    def _update_sequence_metrics(self, sequence):
+    def _update_sequence_metrics(self, sequence) -> None:
         sequence_length: int = len(sequence)
 
         if self.shortest_sequence_length == 0 or self.shortest_sequence_length > sequence_length:
