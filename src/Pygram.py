@@ -11,7 +11,6 @@ class Pygram:
 
     def __init__(self) -> None:
         self.use_type_info: bool = True
-        self.tokenstream: List = []
         self.gram_size: int = 3
         self.sequence_length: int = 6
         self.minimum_token_count: int = 2
@@ -20,7 +19,7 @@ class Pygram:
         self.token_count_model: TokenCountModel = None
 
     @staticmethod
-    def create_parser():
+    def _create_parser():
         parser = argparse.ArgumentParser(prog="pygram",
                                         description="N-Gram code analysis for Python projects")
         parser.add_argument("-f", help="Analyse single Python file")
@@ -36,7 +35,7 @@ class Pygram:
         return parser
     
     @staticmethod
-    def load_token_count_model_from_file(path) -> TokenCountModel:
+    def _load_token_count_model_from_file(path) -> TokenCountModel:
         file_path: os.path = os.path.abspath(path)
         loaded_model: TokenCountModel = None
 
@@ -51,7 +50,7 @@ class Pygram:
         
         return loaded_model
     
-    def set_token_model_save_parameters(self, path, name) -> bool:
+    def _set_token_model_save_parameters(self, path, name) -> bool:
 
         if not os.path.exists(path):
             print("The path for saving the token count model does not exist!")
@@ -68,7 +67,7 @@ class Pygram:
         self.count_model_path = os.path.join(path, name + ".json")
         return True
     
-    def tokenize_project(self, directory, use_type_annotations) -> Tuple[str, Dict]:
+    def _tokenize_project(self, directory, use_type_annotations) -> Tuple[str, Dict]:
         sequence_list: Dict = {}
         python_files = Utils.get_all_python_files_in_directory(directory)
         counter: int = len(python_files)
@@ -86,11 +85,22 @@ class Pygram:
                 sequence_list[module_name] = file_tokens
         return directory_name, sequence_list
     
+    def _analyze_project(self, directory):
+        print("Starting to tokenize project...")
+        project_name, sequence_list = self.tokenize_project(directory, self.use_type_info)
+        print("Finished")
+        print("Building intermediate count model...")
+        self.token_count_model = TokenCountModel(sequence_list, name=project_name)
+        self.token_count_model.build()
+        print("Finished")
+        if self.count_model_path:
+            self.token_count_model.save_to_file(self.count_model_path)
+    
     def start(self):
         if not len(sys.argv[1:]):
             print("For usage information use the -h parameter")
         else:
-            arguments = self.create_parser().parse_args()
+            arguments = self._create_parser().parse_args()
 
             if arguments.t:
                 self.use_type_info = True
@@ -108,13 +118,13 @@ class Pygram:
                 self.reporting_size = arguments.reporting_size
             
             if arguments.load_model is not None:
-                self.token_count_model = CLI.load_token_count_model_from_file(arguments.m)
+                self.token_count_model = Pygram._load_token_count_model_from_file(arguments.load_model)
                 if self.token_count_model is None:
                     return
 
             if arguments.save_model is not None:
                 path, name = arguments.save_model
-                if not self.set_token_model_save_parameters(path, name):
+                if not self._set_token_model_save_parameters(path, name):
                     return
                     
             if arguments.f is not None:
@@ -127,12 +137,4 @@ class Pygram:
                 if self.token_count_model is not None:
                     print("There already is a token count model loaded. Skipping processing of given project directory step!")
                 else:
-                    print("Starting to tokenize project...")
-                    project_name, sequence_list = self.tokenize_project(arguments.d, self.use_type_info)
-                    print("Finished")
-                    print("Building intermediate count model...")
-                    self.token_count_model = TokenCountModel(sequence_list, name=project_name)
-                    self.token_count_model.build()
-                    print("Finished")
-                    if self.count_model_path:
-                        self.token_count_model.save_to_file(self.count_model_path)
+                    self._analyze_project(arguments.d)
