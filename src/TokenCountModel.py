@@ -66,6 +66,12 @@ class TokenCountModel():
 
     def get_sequence_dict(self) -> Dict:
         return self.token_sequences
+    
+    def get_token_count(self, token) -> int:
+        """
+        Get the count of a token or subsequence
+        """
+        return self.count_model[token]
 
     
     def _count_token(self, token_sub_sequence) -> None:
