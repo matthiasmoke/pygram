@@ -4,13 +4,13 @@ from typing import Dict, List
 
 class TokenCountModel():
     
-    def __init__(self, token_sequences={}, name="", count_model={}, shortest_sequence_length=0, longest_sequence_length=0, number_of_distinct_single_tokens=0):
+    def __init__(self, token_sequences={}, name="", count_model={}, shortest_sequence_length=0, longest_sequence_length=0, number_single_tokens=0):
         self.token_sequences: Dict = token_sequences
         self.count_model: Dict = count_model
         self.name: str = name
         self.shortest_sequence_length: int = shortest_sequence_length
         self.longest_sequence_length: int = longest_sequence_length
-        self.number_of_distinct_single_tokens: int = number_of_distinct_single_tokens
+        self.number_single_tokens: int = number_single_tokens
 
     @staticmethod
     def load_from_file(path) -> "TokenCountModel":
@@ -74,8 +74,8 @@ class TokenCountModel():
         """
         return self.count_model[token]
     
-    def get_number_of_distinct_single_tokens(self):
-        return self.number_of_distinct_single_tokens
+    def get_number_single_tokens(self):
+        return self.number_single_tokens
 
     def _count_token(self, token_sub_sequence) -> None:
         if token_sub_sequence in self.count_model:
@@ -88,7 +88,8 @@ class TokenCountModel():
             self.count_model[token] += 1
         else:
             self.count_model[token] = 1
-            self.number_of_distinct_single_tokens += 1
+        
+        self.number_single_tokens += 1
     
     def _update_sequence_metrics(self, sequence) -> None:
         sequence_length: int = len(sequence)

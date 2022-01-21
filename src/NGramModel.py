@@ -67,7 +67,7 @@ class NGramModel:
         return relative_frequency
     
     def _calculate_single_probability(self, token: str) -> Decimal:
-        all_token_count: int = self.token_count_model.get_number_of_distinct_single_tokens()
+        all_token_count: int = self.token_count_model.get_number_single_tokens()
         token_count: int = self.token_count_model.get_token_count(token)
         probability: Decimal = Decimal(str(token_count/all_token_count)).quantize(Decimal('1e-4'))
         return probability
