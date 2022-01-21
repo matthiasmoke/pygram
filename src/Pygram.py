@@ -103,7 +103,7 @@ class Pygram:
         
         if self.token_count_model is not None:
             print("Building n-gram model...")
-            ngram_model: NGramModel = NGramModel(self.token_count_model, self.gram_size, self.sequence_length, self.reporting_size, self.split_sequences)
+            ngram_model: NGramModel = NGramModel(self.token_count_model, self.gram_size, self.sequence_length, self.split_sequences)
             ngram_model.build()
             print("Finished")
 
