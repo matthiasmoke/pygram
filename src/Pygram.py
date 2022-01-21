@@ -1,11 +1,12 @@
 import argparse
 import os
 import sys
+from src.NGramModel import NGramModel
 from src.TokenCountModel import TokenCountModel
 from src.utils import Utils
 from src.Tokenizer import Tokenizer
 
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 class Pygram:
 
@@ -13,10 +14,12 @@ class Pygram:
         self.use_type_info: bool = True
         self.gram_size: int = 3
         self.sequence_length: int = 6
+        self.split_sequences: bool = False
         self.minimum_token_count: int = 2
         self.reporting_size: int = 10
         self.count_model_path: os.path = None
         self.token_count_model: TokenCountModel = None
+        self.project_path: str = None
 
     @staticmethod
     def _create_parser():
@@ -24,8 +27,9 @@ class Pygram:
                                         description="N-Gram code analysis for Python projects")
         parser.add_argument("-f", help="Analyse single Python file")
         parser.add_argument("-d", help="Analyse directory")
-        parser.add_argument("-t", action='store_true', help="This flag enables processing of type annotations. The type information added to the tokens")
+        parser.add_argument("-t", action="store_true", help="This flag enables processing of type annotations. The type information added to the tokens")
         parser.add_argument("-o", help="Set a minimum token occurrence. Standard value is 2")
+        parser.add_argument("--split-sequences", action="store_true", help="Split token sequences instead of using a sliding window")
         parser.add_argument("--load-model", help="Load model from file (.json)")
         parser.add_argument("--save-model", nargs=2, help="Save the intermediate token count model to a file")
         parser.add_argument("--gram-size", help="Set gram size to perform analysis with. Standard value is 3")
@@ -85,17 +89,24 @@ class Pygram:
                 sequence_list[module_name] = file_tokens
         return directory_name, sequence_list
     
-    def _analyze_project(self, directory):
-        print("Starting to tokenize project...")
-        project_name, sequence_list = self.tokenize_project(directory, self.use_type_info)
-        print("Finished")
-        print("Building intermediate count model...")
-        self.token_count_model = TokenCountModel(sequence_list, name=project_name)
-        self.token_count_model.build()
-        print("Finished")
-        if self.count_model_path:
-            self.token_count_model.save_to_file(self.count_model_path)
-    
+    def _analyze_project(self):
+        if self.project_path is not None:
+            print("Starting to tokenize project...")
+            project_name, sequence_list = self.tokenize_project(self.project_path, self.use_type_info)
+            print("Finished")
+            print("Building intermediate count model...")
+            self.token_count_model = TokenCountModel(sequence_list, name=project_name)
+            self.token_count_model.build()
+            print("Finished")
+            if self.count_model_path:
+                self.token_count_model.save_to_file(self.count_model_path)
+        
+        if self.token_count_model is not None:
+            print("Building n-gram model...")
+            ngram_model: NGramModel = NGramModel(self.token_count_model, self.gram_size, self.sequence_length, self.reporting_size, self.split_sequences)
+            ngram_model.build()
+            print("Finished")
+
     def start(self):
         if not len(sys.argv[1:]):
             print("For usage information use the -h parameter")
@@ -117,6 +128,9 @@ class Pygram:
             if arguments.reporting_size is not None:
                 self.reporting_size = arguments.reporting_size
             
+            if arguments.split_sequences:
+                self.split_sequences = True
+            
             if arguments.load_model is not None:
                 self.token_count_model = Pygram._load_token_count_model_from_file(arguments.load_model)
                 if self.token_count_model is None:
@@ -137,4 +151,6 @@ class Pygram:
                 if self.token_count_model is not None:
                     print("There already is a token count model loaded. Skipping processing of given project directory step!")
                 else:
-                    self._analyze_project(arguments.d)
+                    self.project_path = arguments.d
+            
+            self._analyze_project()
