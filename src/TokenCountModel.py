@@ -34,8 +34,9 @@ class TokenCountModel():
             "project": self.name,
             "shortest_sequence_length": self.shortest_sequence_length,
             "longest_sequence_length": self.longest_sequence_length,
+            "number_single_tokens": self.number_single_tokens,
             "token_sequences": self.token_sequences,
-            "count_model": self.count_model 
+            "count_model": self.count_model
             }, outfile)
 
     
@@ -49,7 +50,7 @@ class TokenCountModel():
                 self._update_sequence_metrics(sequence)
                 for (index, token) in enumerate(sequence):
                     # add initial token
-                    self._count_token(token)
+                    self._count_single_token(token)
                     token_sub_sequence = token
                     # build subsequences of the whole sequence
                     for count in range(index + 1, len(sequence)):
