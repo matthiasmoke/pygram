@@ -79,12 +79,12 @@ class NGramModel:
         number_of_prefixes: int = 1
 
         if __debug__:
-            probabilities: List[Decimal] = []
+            probabilities: Dict = {}
 
         probability: Decimal = self._calculate_single_probability(current_token)
 
         if __debug__:
-            probabilities += probability
+            probabilities["{}|{}".format(current_token, current_prefix)] = probability
 
         for i in range(1, len(sequence)):
             current_token = sequence[i]
@@ -92,7 +92,7 @@ class NGramModel:
             probability = probability * prob
 
             if __debug__:
-                probabilities += prob
+                probabilities["{}|{}".format(current_token, current_prefix)] = prob
 
             # if the prefix does not have the length of n - 1 of the n-gram, just append the next token to it
             if number_of_prefixes < self.gram_size - 1:
@@ -100,7 +100,7 @@ class NGramModel:
                 number_of_prefixes += 1
             else:
                 # cut the first token of the prefix
-                current_prefix = current_prefix[0:len(sequence[index_of_prefix_to_remove])]
+                current_prefix = current_prefix[len(sequence[index_of_prefix_to_remove]):len(current_prefix)]
                 # set the new prefix to remove to the token which comes next in the sequence
                 index_of_prefix_to_remove += 1
                 # append the current token to the prefix
