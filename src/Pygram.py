@@ -1,10 +1,11 @@
 import argparse
 import os
 import sys
-from src.NGramModel import NGramModel
-from src.TokenCountModel import TokenCountModel
-from src.utils import Utils
-from src.Tokenizer import Tokenizer
+from .TokenCountModel import TokenCountModel
+from .NGramModel import NGramModel
+from .utils import Utils
+from .Tokenizer import Tokenizer
+from .Reporting import ReportingService
 
 from typing import Dict, Tuple
 
@@ -43,12 +44,14 @@ class Pygram:
         file_path: os.path = os.path.abspath(path)
         loaded_model: TokenCountModel = None
 
+        print("Attempting to load token model...")
         if os.path.isfile(file_path) and file_path.endswith(".json"):
             model: TokenCountModel = TokenCountModel.load_from_file(file_path)
             if model is None:
                 print("Could not load file")
             else:
                 loaded_model = model
+                print("Successfully loaded model!")
         else:
             print("Not a .json file!")
         
@@ -92,7 +95,7 @@ class Pygram:
     def _analyze_project(self):
         if self.project_path is not None:
             print("Starting to tokenize project...")
-            project_name, sequence_list = self.tokenize_project(self.project_path, self.use_type_info)
+            project_name, sequence_list = self._tokenize_project(self.project_path, self.use_type_info)
             print("Finished")
             print("Building intermediate count model...")
             self.token_count_model = TokenCountModel(sequence_list, name=project_name)
@@ -100,12 +103,18 @@ class Pygram:
             print("Finished")
             if self.count_model_path:
                 self.token_count_model.save_to_file(self.count_model_path)
+                print("Saved token count model to: {}".format(self.count_model_path))
         
         if self.token_count_model is not None:
             print("Building n-gram model...")
             ngram_model: NGramModel = NGramModel(self.token_count_model, self.gram_size, self.sequence_length, self.split_sequences)
             ngram_model.build()
             print("Finished")
+            print("Generating Report...")
+            report: ReportingService = ReportingService(ngram_model, self.token_count_model.get_sequence_dict(), self.reporting_size)
+            report.generate_report()
+            print(str(report))
+
 
     def start(self):
         if not len(sys.argv[1:]):

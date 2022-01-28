@@ -45,7 +45,7 @@ class Utils:
         for i in range(0, len(list)):
             output += list[i]
 
-            if i < len(list):
+            if i < len(list) - 1:
                 output += ", "
         output += "]"
         return output
