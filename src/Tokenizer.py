@@ -2,7 +2,7 @@ import ast
 import _ast
 import os
 
-from src.tokens import Tokens
+from .tokens import Tokens
 
 class Tokenizer:
 
@@ -236,8 +236,23 @@ class Tokenizer:
 
     def _retrieve_type_information(self, assign_node: _ast.AnnAssign):
         if assign_node is not None:
-            target_variable = assign_node.target.id
-            type = assign_node.annotation.id
+            target_variable: str = ""
+            if hasattr(assign_node.target, "id"):
+                target_variable = assign_node.target.id
+            elif hasattr(assign_node.target, "attr"):
+                target_variable = assign_node.target.attr
+            else:
+                target_variable = "UNKNOWN"
+                print("Error, could not retrieve variable name for AnnAssign node!")
+            
+            type: str = ""
+            if isinstance(assign_node.annotation, _ast.Subscript):
+                type = assign_node.annotation.value.id
+            elif hasattr(assign_node.annotation, "id"):
+                type = assign_node.annotation.id
+            else:
+                type = "UNKNOWN"
+                print("Error, could not retrieve type information")
             self.variable_type_dict[target_variable] = type
 
 
