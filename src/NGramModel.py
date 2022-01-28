@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import Dict, List
-from src.TokenCountModel import TokenCountModel
+from .utils import Utils
+from .TokenCountModel import TokenCountModel
 
 
-class NGramModel:
+class NGramModel():
 
     def __init__(self, token_count_model: TokenCountModel,
                  gram_size: int, max_sequence_length: int, split_sequences: bool
@@ -21,12 +22,16 @@ class NGramModel:
         """
         split_sequences: List = self._split_sequences()
         for sequence in split_sequences:
-            if sequence not in self.model:
+            sequence_string: str = Utils.get_sequence_string(sequence)
+            if sequence_string not in self.model:
                 probability: Decimal = self._calculate_sequence_probability(sequence)
-                sequence_string: str = self._get_sequence_string(sequence)
                 self.model[sequence_string] = probability
 
     def _split_sequences(self) -> List:
+        """
+        Splits sequences which are longer than the max. sequence length into smaller sequences.
+        Either by using a sliding window or hard splitting them according to the configuration
+        """
         sequences: List[List[str]] = self.token_count_model.get_sequence_list_without_module_info()
         max: int = self.max_sequence_length
         split_sequences: List[List[str]] = []
@@ -51,12 +56,6 @@ class NGramModel:
     def _split_sequence_with_sliding_window(self, sequence: List[str], sequence_list: List[List[str]]) -> None:
         for i in range(0, len(sequence) - self.max_sequence_length):
             sequence_list.append(sequence[i:i + self.max_sequence_length])
-
-    def _get_sequence_string(self, sequence) -> str:
-        output: str = ""
-        for token in sequence:
-            output += token
-        return output
 
     def _calculate_relative_frequency(self, token: str, prefix: str) -> Decimal:
         combined: str = prefix + token

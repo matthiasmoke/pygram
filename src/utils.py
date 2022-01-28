@@ -30,3 +30,23 @@ class Utils:
             for index in range(2, len(parts) - 1):
                 output += parts[index]
         return output
+    
+    @staticmethod
+    def get_sequence_string(sequence: List[str]) -> str:
+        output: str = ""
+        for token in sequence:
+            output += token
+        return output
+    
+    @staticmethod
+    def get_list_string(list: List[str]) -> str:
+        output = "["
+
+        for i in range(0, len(list)):
+            output += list[i]
+
+            if i < len(list):
+                output += ", "
+        output += "]"
+        return output
+
