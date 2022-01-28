@@ -23,7 +23,8 @@ class TokenCountModel():
                         name=model["project"],
                         count_model=model["count_model"],
                         shortest_sequence_length=model["shortest_sequence_length"],
-                        longest_sequence_length=model["longest_sequence_length"]
+                        longest_sequence_length=model["longest_sequence_length"],
+                        number_single_tokens=model["number_single_tokens"]
                         )
         return None
     
