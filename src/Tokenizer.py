@@ -2,7 +2,7 @@ import ast
 import _ast
 import os
 
-from .tokens import Tokens
+from .tokenization.tokens import Tokens
 
 class Tokenizer:
 
@@ -33,9 +33,6 @@ class Tokenizer:
 
     def get_token_sequences(self):
         return self.sequence_stream
-
-    def _get_module_name(self): 
-        pass
 
     def _load_syntax_tree(self):
         if os.path.isfile(self._filepath):

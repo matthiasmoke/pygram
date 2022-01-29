@@ -25,6 +25,7 @@ class Tokens(Enum):
     PASS = "<PASS>"
     ASSERT = "<ASSERT>"
     BREAK = "<BREAK>"
+    YIELD = "<YIELD>"
 
 
 
