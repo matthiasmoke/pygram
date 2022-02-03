@@ -1,9 +1,9 @@
 import logging
 import ast
 import os
-from _ast import ClassDef, FunctionDef, AsyncFunctionDef, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break
+from _ast import ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break
 from typing import List
-from tokens import Tokens
+from .tokens import Tokens
 
 
 logger = logging.getLogger("main")
@@ -17,6 +17,20 @@ class Tokenizer:
         self.sequence_stream: List[str] = []
 
         self._syntax_tree = self._load_syntax_tree()
+    
+    def __str__(self):
+        output = str(self._filepath) + "\n\n"
+
+        for sequence in self.sequence_stream:
+            output += "["
+            for (index, token) in enumerate(sequence):
+                if index < len(sequence) - 1:
+                    output += "{}, ".format(token)
+                else:
+                    output += "{}]".format(token)
+            output += "\n"
+
+        return output
 
     def process_file(self) -> List[List[str]]:
         """
@@ -40,7 +54,7 @@ class Tokenizer:
     def _ast_depth_search(self) -> None:
         logger.debug("Starting depth search of syntax tree")
         if self._syntax_tree.body is not None:
-
+            module_tokens = []
             for node in self._syntax_tree.body:
                 if isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef):
                     result = self._process_function_def(node)
@@ -51,9 +65,9 @@ class Tokenizer:
                     self.sequence_stream.append(result)
 
                 else:
-                    module_tokens = []
                     self._classify_and_process_node(node, module_tokens)
-                    self.sequence_stream.append(module_tokens)
+            if len(module_tokens):
+                self.sequence_stream.append(module_tokens)
 
 
     def _search_node_body(self, node_body, tokens=None) -> List[str]:
@@ -85,6 +99,8 @@ class Tokenizer:
             self._process_await(node, token_list)
         elif isinstance(node, Expr):
             self._process_expression(node, token_list)
+        elif isinstance(node, Call):
+            self._process_call(node, token_list)
         elif isinstance(node, Pass):
             token_list.append(Tokens.PASS.value)
         elif isinstance(node, Break):
@@ -189,10 +205,25 @@ class Tokenizer:
     #### Functions to override in typed tokenization
 
     def _process_call(self, node: Call, tokens):
-        pass
+        if len(node.args):
+            self._search_node_body(node.args, tokens)
+        
+        token = "UNKNOWN"
+        if (isinstance(node.func, Name)):
+            token = node.func.id + "()"
+        elif isinstance(node.func, Attribute):
+            attribute: Attribute = node.func
+            token = attribute.attr + "()"
+            if isinstance(attribute.value, Call):
+                self._process_call(attribute.value, tokens)
+        else:
+            logger.error("Unable to determine method name in module {}".format(self._filepath))
+        
+        tokens.append(token)
 
     def _process_for_block(self, node: For, tokens):
             tokens.append(Tokens.FOR.value)
+            self._classify_and_process_node(node.iter, tokens)
             self._search_node_body(node.body, tokens)
             tokens.append(Tokens.END_FOR.value)
     
