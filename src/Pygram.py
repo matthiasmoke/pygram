@@ -4,7 +4,8 @@ import sys
 from .TokenCountModel import TokenCountModel
 from .NGramModel import NGramModel
 from .utils import Utils
-from .Tokenizer import Tokenizer
+from .tokenization.tokenizer import Tokenizer
+from.tokenization.type_tokenizer import TypeTokenizer
 from .Reporting import ReportingService
 
 from typing import Dict, Tuple
@@ -74,7 +75,7 @@ class Pygram:
         self.count_model_path = os.path.join(path, name + ".json")
         return True
     
-    def _tokenize_project(self, directory, use_type_annotations) -> Tuple[str, Dict]:
+    def _tokenize_project(self, directory) -> Tuple[str, Dict]:
         sequence_list: Dict = {}
         python_files = Utils.get_all_python_files_in_directory(directory)
         counter: int = len(python_files)
@@ -87,7 +88,12 @@ class Pygram:
 
             if os.path.isfile(path):
                 module_name = Utils.get_sub_path(directory_name, file)
-                tokenizer = Tokenizer(path, use_type_annotations)
+
+                if (self.use_type_info):
+                    tokenizer = TypeTokenizer(path)
+                else:
+                    tokenizer = Tokenizer(path)
+                tokenizer.process_file()
                 file_tokens = tokenizer.get_token_sequences()
                 sequence_list[module_name] = file_tokens
         return directory_name, sequence_list
@@ -95,7 +101,7 @@ class Pygram:
     def _analyze_project(self):
         if self.project_path is not None:
             print("Starting to tokenize project...")
-            project_name, sequence_list = self._tokenize_project(self.project_path, self.use_type_info)
+            project_name, sequence_list = self._tokenize_project(self.project_path)
             print("Finished")
             print("Building intermediate count model...")
             self.token_count_model = TokenCountModel(sequence_list, name=project_name)
@@ -153,7 +159,11 @@ class Pygram:
             if arguments.f is not None:
                 path = os.path.abspath(arguments.f)
                 if os.path.isfile(path) and path.endswith(".py"):
-                    tokenizer = Tokenizer(path, self.use_type_info)
+                    if self.use_type_info:
+                        tokenizer = TypeTokenizer(path)
+                    else:
+                        tokenizer = Tokenizer(path)
+                    tokenizer.process_file()
                     print(str(tokenizer))
 
             if arguments.d is not None:
