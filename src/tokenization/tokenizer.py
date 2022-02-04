@@ -2,7 +2,7 @@ import logging
 import ast
 import os
 from _ast import ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break
-from typing import List
+from typing import List, Tuple
 from .tokens import Tokens
 
 
@@ -51,25 +51,6 @@ class Tokenizer:
                 return tree
         return None
 
-    def _ast_depth_search(self) -> None:
-        logger.debug("Starting depth search of syntax tree")
-        if self._syntax_tree.body is not None:
-            module_tokens = []
-            for node in self._syntax_tree.body:
-                if isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef):
-                    result = self._process_function_def(node)
-                    self.sequence_stream.append(result)
-
-                elif isinstance(node, ClassDef):
-                    result = self._process_class_def(node)
-                    self.sequence_stream.append(result)
-
-                else:
-                    self._classify_and_process_node(node, module_tokens)
-            if len(module_tokens):
-                self.sequence_stream.append(module_tokens)
-
-
     def _search_node_body(self, node_body, tokens=None) -> List[str]:
         if tokens is None:
             tokens = []
@@ -101,6 +82,8 @@ class Tokenizer:
             self._process_expression(node, token_list)
         elif isinstance(node, Call):
             self._process_call(node, token_list)
+        elif isinstance(node, Tuple):
+            self._process_tuple(node, token_list)
         elif isinstance(node, Pass):
             token_list.append(Tokens.PASS.value)
         elif isinstance(node, Break):
@@ -204,7 +187,25 @@ class Tokenizer:
 
     #### Functions to override in typed tokenization
 
-    def _process_call(self, node: Call, tokens):
+    def _ast_depth_search(self) -> None:
+        logger.debug("Starting depth search of syntax tree")
+        if self._syntax_tree.body is not None:
+            module_tokens = []
+            for node in self._syntax_tree.body:
+                if isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef):
+                    result = self._process_function_def(node)
+                    self.sequence_stream.append(result)
+
+                elif isinstance(node, ClassDef):
+                    result = self._process_class_def(node)
+                    self.sequence_stream.append(result)
+
+                else:
+                    self._classify_and_process_node(node, module_tokens)
+            if len(module_tokens):
+                self.sequence_stream.append(module_tokens)
+
+    def _process_call(self, node: Call, tokens: List[str]):
         if len(node.args):
             self._search_node_body(node.args, tokens)
         
@@ -220,6 +221,9 @@ class Tokenizer:
             logger.error("Unable to determine method name in module {}".format(self._filepath))
         
         tokens.append(token)
+    
+    def process_tuple(self, node: Tuple, tokens: List[str]):
+        self._search_node_body(node.etls)
 
     def _process_for_block(self, node: For, tokens):
             tokens.append(Tokens.FOR.value)
