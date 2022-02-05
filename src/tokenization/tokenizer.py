@@ -1,8 +1,8 @@
 import logging
 import ast
 import os
-from _ast import ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break
-from typing import List, Tuple
+from _ast import ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
+from typing import List
 from .tokens import Tokens
 
 
@@ -51,6 +51,24 @@ class Tokenizer:
                 return tree
         return None
 
+    def _ast_depth_search(self) -> None:
+        logger.debug("Starting depth search of syntax tree")
+        if self._syntax_tree.body is not None:
+            module_tokens = []
+            for node in self._syntax_tree.body:
+                if isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef):
+                    result = self._process_function_def(node)
+                    self.sequence_stream.append(result)
+
+                elif isinstance(node, ClassDef):
+                    result = self._process_class_def(node)
+                    self.sequence_stream.append(result)
+
+                else:
+                    self._classify_and_process_node(node, module_tokens)
+            if len(module_tokens):
+                self.sequence_stream.append(module_tokens)
+
     def _search_node_body(self, node_body, tokens=None) -> List[str]:
         if tokens is None:
             tokens = []
@@ -94,29 +112,6 @@ class Tokenizer:
             # The type annotation node is included here, so the whole method 
             # does not need an override in the typed tokenizer
             self._process_ann_assign(node, token_list)
-
-    def _process_class_def(self, node) -> List[str]:
-        class_tokens = []
-
-        for child in node.body:
-            if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
-                result = self._process_function_def(child)
-                self.sequence_stream.append(result)
-            else:
-                self._classify_and_process_node(child, class_tokens)
-
-        return class_tokens
-    
-    def _process_function_def(self, node) -> List[str]:
-        tokens = []
-
-        if isinstance(node, AsyncFunctionDef):
-            tokens.append(Tokens.ASYNC.value)
-        
-        tokens.append(Tokens.DEF.value)
-        self._search_node_body(node.body, tokens)
-        tokens.append(Tokens.END_DEF.value)
-        return tokens
     
     def _process_if_block(self, node: If, tokens):
         tokens.append(Tokens.IF.value)
@@ -187,23 +182,28 @@ class Tokenizer:
 
     #### Functions to override in typed tokenization
 
-    def _ast_depth_search(self) -> None:
-        logger.debug("Starting depth search of syntax tree")
-        if self._syntax_tree.body is not None:
-            module_tokens = []
-            for node in self._syntax_tree.body:
-                if isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef):
-                    result = self._process_function_def(node)
-                    self.sequence_stream.append(result)
+    def _process_class_def(self, node: ClassDef) -> List[str]:
+        class_tokens = []
 
-                elif isinstance(node, ClassDef):
-                    result = self._process_class_def(node)
-                    self.sequence_stream.append(result)
+        for child in node.body:
+            if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
+                result = self._process_function_def(child)
+                self.sequence_stream.append(result)
+            else:
+                self._classify_and_process_node(child, class_tokens)
 
-                else:
-                    self._classify_and_process_node(node, module_tokens)
-            if len(module_tokens):
-                self.sequence_stream.append(module_tokens)
+        return class_tokens
+    
+    def _process_function_def(self, node) -> List[str]:
+        tokens = []
+
+        if isinstance(node, AsyncFunctionDef):
+            tokens.append(Tokens.ASYNC.value)
+        
+        tokens.append(Tokens.DEF.value)
+        self._search_node_body(node.body, tokens)
+        tokens.append(Tokens.END_DEF.value)
+        return tokens
 
     def _process_call(self, node: Call, tokens: List[str]):
         if len(node.args):
@@ -222,8 +222,8 @@ class Tokenizer:
         
         tokens.append(token)
     
-    def process_tuple(self, node: Tuple, tokens: List[str]):
-        self._search_node_body(node.etls)
+    def _process_tuple(self, node: Tuple, tokens: List[str]):
+        self._search_node_body(node.elts, tokens)
 
     def _process_for_block(self, node: For, tokens):
             tokens.append(Tokens.FOR.value)
