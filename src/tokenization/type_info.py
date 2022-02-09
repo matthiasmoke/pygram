@@ -25,10 +25,10 @@ class TypeInfo:
         if object_type is None:
             return None
 
+        if self._is_dict(object_type):
+                return object_type._contained_types[1]
         if tuple_index > 0 and self._is_tuple_or_dict(object_type):
             # always return the second index for Dict objects
-            if self._is_dict(object_type):
-                return object_type._contained_types[1]
             return object_type._contained_types[tuple_index]
         
         return object_type

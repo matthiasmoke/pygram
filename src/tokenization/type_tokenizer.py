@@ -79,6 +79,9 @@ class TypeTokenizer(Tokenizer):
         tokens.append(token)
     
     def _process_call_on_object(self, node: Attribute) -> str:
+        """
+        Processes a method call which happens on an object
+        """
         method_name: str = node.attr
         subscript_depth: int = 0
         subscript_index: int = 0
@@ -104,6 +107,9 @@ class TypeTokenizer(Tokenizer):
         return output
     
     def _get_origin_of_subscript(self, node: Subscript, depth: int) -> Tuple[str, int]:
+        """
+        Returns the name of the List/Dict/Tuple/etc which contains the object on which the method call happens
+        """
         value = node.value
         origin_name = ""
         depth += 1
@@ -117,6 +123,9 @@ class TypeTokenizer(Tokenizer):
         return origin_name, depth
     
     def _get_index_of_subscript(self, node: Subscript) -> int:
+        """
+        Returns the index of the Dict / Tuple object on which the method call happens
+        """
         index = None
         try:
             if isinstance(node.slice, Index):
@@ -141,6 +150,9 @@ class TypeTokenizer(Tokenizer):
         tokens.append(Tokens.END_FOR.value)
     
     def _cache_variables_in_for_block(self, node: For):
+        """
+        Caches variables and their respective types which are used in a for block
+        """
         for_target_name: str = ""
         if isinstance(node.target, Name):
             for_target_name = node.target.id
