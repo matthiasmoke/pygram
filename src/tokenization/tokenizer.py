@@ -80,6 +80,7 @@ class Tokenizer:
         return tokens
     
     def _classify_and_process_node(self, node, token_list: List[str]) -> List[str]:
+        logger.debug("Processing node {} in line {}".format(node, node.lineno))
         if isinstance(node, If):
             self._process_if_block(node, token_list)
         elif isinstance(node, For):
@@ -228,7 +229,7 @@ class Tokenizer:
     def _process_tuple(self, node: Tuple, tokens: List[str]):
         self._search_node_body(node.elts, tokens)
 
-    def _process_for_block(self, node: For, tokens):
+    def _process_for_block(self, node: For, tokens: List[str]):
             tokens.append(Tokens.FOR.value)
             self._classify_and_process_node(node.iter, tokens)
             self._search_node_body(node.body, tokens)

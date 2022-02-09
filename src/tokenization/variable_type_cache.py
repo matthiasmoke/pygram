@@ -1,11 +1,13 @@
+from asyncio.log import logger
 from enum import Enum
 from typing import Dict
-from .type_utils import TypeInfo
+from .type_info import TypeInfo
 
 class Scope(Enum):
     MODULE = 1
     CLASS = 2
-    FUNCTION = 3
+    CLASSFUNCTION = 3
+    FUNCTION = 4
 
 class VariableTypeCache:
 
@@ -14,9 +16,9 @@ class VariableTypeCache:
         self.class_scope_name = ""
         self.function_scope_name = ""
 
-        self.module_variables: Dict = {}
-        self.class_variables: Dict = {}
-        self.function_variables: Dict = {}
+        self.module_variables: Dict[str, TypeInfo] = {}
+        self.class_variables: Dict[str, TypeInfo] = {}
+        self.function_variables: Dict[str, TypeInfo] = {}
         self.previous_scope = Scope.MODULE
         self.current_scope: Scope = Scope.MODULE
     
@@ -30,6 +32,17 @@ class VariableTypeCache:
         self.previous_scope = Scope.CLASS
         self.current_scope = Scope.MODULE
         self.class_variables.clear()
+    
+    def set_class_function_scope(self, name):
+        self.function_scope_name = name
+        self.previous_scope = self.current_scope
+        self.current_scope = Scope.CLASSFUNCTION
+    
+    def leave_class_function_scope(self):
+        self.current_scope = self.previous_scope
+        self.previous_scope = Scope.CLASSFUNCTION
+        self.function_variables.clear()
+
     
     def set_function_scope(self, name: str):
         self.function_scope_name = name
@@ -52,10 +65,10 @@ class VariableTypeCache:
             self.function_variables[variable_name] = variable_type
 
 
-    def get_variable_type(self, variable_name):
+    def get_variable_type(self, variable_name: str, depth: int, subscript_index: int) -> TypeInfo:
         scope: Scope = self.current_scope
         previous_scope: Scope = self.previous_scope
-        variable_type: str = None
+        variable_type: TypeInfo = None
         if scope == Scope.FUNCTION:
             variable_type = self.function_variables.get(variable_name, None)
         
@@ -64,7 +77,21 @@ class VariableTypeCache:
         
         if variable_type is None:
             variable_type = self.module_variables.get(variable_name, None)
+        
+        if variable_type is None:
+            logger.error("Could not find variable [{}] in cache of module {}"
+            .format(variable_name, self.module_path))
+            return None
+        
+        variable_type = variable_type.get_type(depth, subscript_index)
+
+        if variable_type is None:
+            logger.error("Could not retrieve type of variable [{}] for depth {} and subscript index {}"
+            .format(variable_name, depth, subscript_index))
+            return None
 
         return variable_type
+    
+
 
 
