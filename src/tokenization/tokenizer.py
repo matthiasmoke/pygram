@@ -219,6 +219,7 @@ class Tokenizer:
             token = attribute.attr + "()"
             if isinstance(attribute.value, Call):
                 self._process_call(attribute.value, tokens)
+                token = attribute.attr + "()"
         else:
             logger.error("Unable to determine method name in module {}".format(self._filepath))
         
