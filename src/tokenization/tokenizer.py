@@ -62,7 +62,9 @@ class Tokenizer:
 
                 elif isinstance(node, ClassDef):
                     result = self._process_class_def(node)
-                    self.sequence_stream.append(result)
+
+                    if len(result):
+                        self.sequence_stream += result
 
                 else:
                     self._classify_and_process_node(node, module_tokens)
@@ -188,7 +190,7 @@ class Tokenizer:
         for child in node.body:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
                 result = self._process_function_def(child)
-                self.sequence_stream.append(result)
+                class_tokens.append(result)
             else:
                 self._classify_and_process_node(child, class_tokens)
 

@@ -13,7 +13,7 @@ from typing import Dict, Tuple
 class Pygram:
 
     def __init__(self) -> None:
-        self.use_type_info: bool = True
+        self.use_type_info: bool = False
         self.gram_size: int = 3
         self.sequence_length: int = 6
         self.split_sequences: bool = False
