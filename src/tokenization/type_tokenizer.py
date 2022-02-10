@@ -26,7 +26,9 @@ class TypeTokenizer(Tokenizer):
     
     def _process_class_def(self, node: ClassDef) -> List[str]:
         class_tokens = []
+        class_name = node.name
         self.variable_cache.set_class_scope(node.name)
+        self.variable_cache.add_variable("self", TypeInfo(class_name))
         for child in node.body:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
                 self.variable_cache.set_class_function_scope(child.name)
