@@ -1,17 +1,17 @@
 
-from typing import Dict, List
-from _ast import Subscript, Name, Tuple, AnnAssign
+from typing import List
+from _ast import Subscript, Name, Tuple, Constant
 import logging
 
 logger = logging.getLogger("main")
 
 class TypeInfo:
 
-    def __init__(self, node: AnnAssign = None, label: str = "") -> None:
+    def __init__(self, annotation_node = None, label: str = "") -> None:
         self._label: str = label
         self._contained_types: List[TypeInfo] = []
-        if node is not None:
-            self._create_from_ann_assign(node)
+        if annotation_node is not None:
+            self._create_from_annotation_node(annotation_node)
     
     def get_label(self) -> str:
         return self._label
@@ -56,9 +56,11 @@ class TypeInfo:
     def _is_dict(self, type_info: "TypeInfo") -> bool:
         return type_info._label == "Dict"
     
-    def _create_from_ann_assign(self, node: AnnAssign) -> None:
+    def _create_from_annotation_node(self, node) -> None:
         if isinstance(node, Name):
             self._label = node.id
+        elif isinstance(node, Constant):
+            self._label = node.value
         elif isinstance(node, Subscript):
             self._label = node.value.id
             contained = self._get_type_from_subscript(node)
