@@ -1,7 +1,9 @@
-from asyncio.log import logger
+import logging
 from enum import Enum
 from typing import Dict
 from .type_info import TypeInfo
+
+logger = logging.getLogger("main")
 
 class Scope(Enum):
     MODULE = 1
