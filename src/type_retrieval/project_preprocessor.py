@@ -22,6 +22,7 @@ class TypePreprocessor():
             self._type_cache = TypeCache(self._project_name)
             for file in Utils.get_all_python_files_in_directory(path):
                 self._process_file(file)
+        return self._type_cache
         
     def _process_file(self, path: str) -> FileCache:
         logger.debug("Preprocessing {}".format(path))
@@ -31,11 +32,21 @@ class TypePreprocessor():
             file_name: str = Utils.get_last_element_of_path(path)
             file_cache = FileCache(file_name)
             self._search_ast(syntax_tree, file_cache)
-            # TODO convert path to dotted module path
-            self._type_cache.add_file_cache(path, file_cache)
+            dotted_module_path: str = self._generate_dotted_module_path(path)
+            self._type_cache.add_file_cache(dotted_module_path, file_cache)
         else:
             logger.error("Could not preprocess file {}".format(path))
         return file_cache
+    
+    def _generate_dotted_module_path(self, path: str) -> str:
+        """
+        Creates dotted module path from regular file path
+        """
+        project_only_path: str = Utils.get_sub_path(self._project_name, path)
+        # cut ending of python file
+        project_only_path = project_only_path[0:(len(project_only_path) - 3)]
+        project_only_path = project_only_path.replace("/", ".")
+        return project_only_path
 
     def _search_ast(self, tree, cache: FileCache):
         for node in tree.body:

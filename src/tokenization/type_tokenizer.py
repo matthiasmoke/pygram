@@ -3,6 +3,8 @@ import ast
 import os
 from _ast import Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
 from typing import List, Tuple
+
+from ..type_retrieval.preprocessed_type_caches import TypeCache
 from .tokenizer import Tokenizer
 from ..type_retrieval.type_info import TypeInfo
 from ..type_retrieval.variable_type_cache import VariableTypeCache
@@ -12,9 +14,10 @@ logger = logging.getLogger("main")
 
 class TypeTokenizer(Tokenizer):
 
-    def __init__(self, filepath) -> None:
+    def __init__(self, filepath, type_cache: TypeCache) -> None:
         super().__init__(filepath)
-        self.variable_cache: VariableTypeCache = VariableTypeCache(filepath) 
+        self._type_cache: TypeCache = type_cache
+        self._variable_cache: VariableTypeCache = VariableTypeCache(filepath) 
     
     def _load_syntax_tree(self):
         if os.path.isfile(self._filepath):
@@ -27,29 +30,29 @@ class TypeTokenizer(Tokenizer):
     def _process_class_def(self, node: ClassDef) -> List[str]:
         class_tokens = []
         class_name = node.name
-        self.variable_cache.set_class_scope(node.name)
-        self.variable_cache.add_variable("self", TypeInfo(class_name))
+        self._variable_cache.set_class_scope(node.name)
+        self._variable_cache.add_variable("self", TypeInfo(class_name))
         for child in node.body:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
-                self.variable_cache.set_class_function_scope(child.name)
+                self._variable_cache.set_class_function_scope(child.name)
                 result = self._process_function_def(child)
                 class_tokens.append(result)
-                self.variable_cache.leave_class_function_scope()
+                self._variable_cache.leave_class_function_scope()
             else:
                 self._classify_and_process_node(child, class_tokens)
-        self.variable_cache.leave_class_scope()
+        self._variable_cache.leave_class_scope()
         return class_tokens
     
     def _process_function_def(self, node) -> List[str]:
         tokens = []
-        self.variable_cache.set_function_scope(node.name)
+        self._variable_cache.set_function_scope(node.name)
         if isinstance(node, AsyncFunctionDef):
             tokens.append(Tokens.ASYNC.value)
         
         tokens.append(Tokens.DEF.value)
         self._search_node_body(node.body, tokens)
         tokens.append(Tokens.END_DEF.value)
-        self.variable_cache.leave_function_scope()
+        self._variable_cache.leave_function_scope()
         return tokens
     
     def _process_call(self, node: Call, tokens):
@@ -74,7 +77,6 @@ class TypeTokenizer(Tokenizer):
             else:
                 logger.error("Unable to determine Attribute type on Call in module {}"
                 .format(self._filepath))
-            # TODO get type of object
         else:
             logger.error("Unable to determine method name in module {}".format(self._filepath))
         
@@ -93,7 +95,7 @@ class TypeTokenizer(Tokenizer):
         elif isinstance(node.value, Name):
             object_name = node.value.id
 
-        variable_type: TypeInfo = self.variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
+        variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
         token = self._construct_call_token(method_name, variable_type)
         
         return token
@@ -170,8 +172,8 @@ class TypeTokenizer(Tokenizer):
             iter_name, subscript_depth = self._get_origin_of_subscript(node.iter, subscript_depth)
             subscript_index = self._get_index_of_subscript(node.iter)
         
-        variable_type: TypeInfo = self.variable_cache.get_variable_type(iter_name, subscript_depth, subscript_index)
-        self.variable_cache.add_variable(for_target_name, variable_type)
+        variable_type: TypeInfo = self._variable_cache.get_variable_type(iter_name, subscript_depth, subscript_index)
+        self._variable_cache.add_variable(for_target_name, variable_type)
 
     def _get_variable_name_for_assignment(self, node) -> str:
         target_variable: str = ""
@@ -225,7 +227,7 @@ class TypeTokenizer(Tokenizer):
                 logger.error("Could not retrieve variable name from AnnAssign")
             
             self._classify_and_process_node(node.value, tokens)
-            self.variable_cache.add_variable(complete_name, info)
+            self._variable_cache.add_variable(complete_name, info)
 
         except AttributeError:
             logger.error("Failed processing AnnAssign in module {}".format(self._filepath))

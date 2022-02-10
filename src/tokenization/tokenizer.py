@@ -31,6 +31,9 @@ class Tokenizer:
             output += "\n"
 
         return output
+    
+    def get_token_sequences(self):
+        return self.sequence_stream
 
     def process_file(self) -> List[List[str]]:
         """

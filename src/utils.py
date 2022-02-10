@@ -1,10 +1,14 @@
 import os
 from typing import List
+import ast
 
 class Utils:
 
     @staticmethod
-    def get_all_python_files_in_directory(path) -> List:
+    def get_all_python_files_in_directory(path) -> List[str]:
+        """
+        Returns a list of all Python files in given directory and subdirectories
+        """
         output: List = []
 
         if (os.path.isdir(path)):
@@ -19,6 +23,14 @@ class Utils:
         return output
     
     @staticmethod
+    def load_syntax_tree(path: str, use_type_info: bool):
+        if os.path.isfile(path):
+            with open(path, "r") as source:
+                tree = ast.parse(source.read(), type_comments=use_type_info)
+                return tree
+        return None
+    
+    @staticmethod
     def get_sub_path(starting_dir: str, path: str) -> str:
         parts: List = path.split(starting_dir)
         output: str = ""
@@ -30,6 +42,10 @@ class Utils:
             for index in range(2, len(parts) - 1):
                 output += parts[index]
         return output
+    
+    @staticmethod
+    def get_last_element_of_path(path: str) -> str:
+        return os.path.basename(os.path.normpath(path))
     
     @staticmethod
     def get_sequence_string(sequence: List[str]) -> str:
