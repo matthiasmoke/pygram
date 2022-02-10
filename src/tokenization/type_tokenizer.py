@@ -222,6 +222,7 @@ class TypeTokenizer(Tokenizer):
             else:
                 logger.error("Could not retrieve variable name from AnnAssign")
             
+            self._classify_and_process_node(node.value, tokens)
             self.variable_cache.add_variable(complete_name, info)
 
         except AttributeError:
