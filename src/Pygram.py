@@ -1,6 +1,8 @@
 import argparse
 import os
 import sys
+from .type_retrieval.preprocessed_type_caches import TypeCache
+from .type_retrieval.project_preprocessor import TypePreprocessor
 from .TokenCountModel import TokenCountModel
 from .NGramModel import NGramModel
 from .utils import Utils
@@ -75,12 +77,18 @@ class Pygram:
         self.count_model_path = os.path.join(path, name + ".json")
         return True
     
-    def _tokenize_project(self, directory) -> Tuple[str, Dict]:
+    def _tokenize_project(self, directory: str) -> Tuple[str, Dict]:
         sequence_list: Dict = {}
         python_files = Utils.get_all_python_files_in_directory(directory)
         counter: int = len(python_files)
         directory_name = os.path.basename(directory)
+        type_cache: TypeCache = None
         print("Detected {} Python files".format(counter))
+
+        if self.use_type_info:
+            print("Preprocessing the project for types...")
+            preprocessor: TypePreprocessor = TypePreprocessor(directory)
+            type_cache: TypeCache = preprocessor.process_project()
 
         for (index, file) in enumerate(python_files):
             print("[{}/{}] Processing \"{}\"".format(index + 1, counter, file))
@@ -90,7 +98,7 @@ class Pygram:
                 module_name = Utils.get_sub_path(directory_name, file)
 
                 if (self.use_type_info):
-                    tokenizer = TypeTokenizer(path)
+                    tokenizer = TypeTokenizer(path, type_cache)
                 else:
                     tokenizer = Tokenizer(path)
                 tokenizer.process_file()
