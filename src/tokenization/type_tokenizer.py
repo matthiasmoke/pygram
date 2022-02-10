@@ -4,8 +4,8 @@ import os
 from _ast import Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
 from typing import List, Tuple
 from .tokenizer import Tokenizer
-from .type_info import TypeInfo
-from .variable_type_cache import VariableTypeCache
+from ..type_retrieval.type_info import TypeInfo
+from ..type_retrieval.variable_type_cache import VariableTypeCache
 from .tokens import Tokens
 
 logger = logging.getLogger("main")
