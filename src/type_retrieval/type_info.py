@@ -83,13 +83,16 @@ class TypeInfo:
         return contained_types
 
     def _get_tuple_types(self, node: Tuple) -> List["TypeInfo"]:
+        """
+        Get types contained within tuple node
+        """
         types: List[TypeInfo] = []
         for type_node in node.elts:
             if isinstance(type_node, Name):
                 types.append(TypeInfo(label=type_node.id))
             if isinstance(type_node, Subscript):
                 contained_type: TypeInfo = TypeInfo(label=type_node.value.id)
-                sub_types: List[TypeInfo] = self._get_type_from_subscript(type_node, sub_types, 0)
+                sub_types: List[TypeInfo] = self._get_type_from_subscript(type_node)
                 contained_type.set_contained_types(sub_types)
                 types.append(contained_type)
         return types
