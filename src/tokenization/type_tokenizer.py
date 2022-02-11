@@ -1,8 +1,10 @@
 import logging
 import ast
 import os
-from _ast import Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
+from _ast import ImportFrom, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
 from typing import List, Tuple
+
+from ..type_retrieval.import_cache import ImportCache
 
 from ..type_retrieval.preprocessed_type_caches import TypeCache
 from .tokenizer import Tokenizer
@@ -14,9 +16,10 @@ logger = logging.getLogger("main")
 
 class TypeTokenizer(Tokenizer):
 
-    def __init__(self, filepath, type_cache: TypeCache) -> None:
-        super().__init__(filepath)
+    def __init__(self, filepath, module_name, type_cache: TypeCache) -> None:
+        super().__init__(filepath, module_name)
         self._type_cache: TypeCache = type_cache
+        self._import_cache = ImportCache(self.module_path)
         self._variable_cache: VariableTypeCache = VariableTypeCache(filepath) 
     
     def _load_syntax_tree(self):
@@ -26,6 +29,9 @@ class TypeTokenizer(Tokenizer):
                 tree = ast.parse(source.read(), type_comments=True)
                 return tree
         return None
+    
+    def _process_import_from(self, node: ImportFrom) -> None:
+        self._import_cache.add_import(node)
     
     def _process_class_def(self, node: ClassDef) -> List[str]:
         class_tokens = []
@@ -55,11 +61,13 @@ class TypeTokenizer(Tokenizer):
         self._variable_cache.leave_function_scope()
         return tokens
     
-    def _process_call(self, node: Call, tokens):
+    def _process_call(self, node: Call, tokens) -> Tuple[str, TypeInfo]:
         if len(node.args):
             self._search_node_body(node.args, tokens)
         
         token = "UNKNOWN"
+        method_name = ""
+        variable_type: TypeInfo = None
         if (isinstance(node.func, Name)):
             method_name = node.func.id
             token = self._construct_call_token(method_name, None)
@@ -68,21 +76,25 @@ class TypeTokenizer(Tokenizer):
             attribute: Attribute = node.func
 
             if isinstance(attribute.value, Subscript) or isinstance(attribute.value, Name):
-                token = self._process_call_on_object(attribute)
+                token, method_name, variable_type = self._process_call_on_object(attribute)
 
             elif isinstance(attribute.value, Call):
-                self._process_call(attribute.value, tokens)
-                token = self._construct_call_token(attribute.attr, None)
-                # TODO get return type of previous method
+                prev_method_name, prev_type = self._process_call(attribute.value, tokens)
+                method_name = attribute.attr
+                modules: List[str] = self._import_cache.get_modules_for_class(prev_type.get_label())
+                type: TypeInfo = self._type_cache.get_return_type_of_class_function(prev_method_name, prev_type.get_label(), modules)
+                variable_type = type
+                token = self._construct_call_token(attribute.attr, type)
             else:
                 logger.error("Unable to determine Attribute type on Call in module {}"
-                .format(self._filepath))
+                .format(self.module_path))
         else:
-            logger.error("Unable to determine method name in module {}".format(self._filepath))
+            logger.error("Unable to determine method name in module {}".format(self.module_path))
         
         tokens.append(token)
-    
-    def _process_call_on_object(self, node: Attribute) -> str:
+        return (method_name, variable_type)
+
+    def _process_call_on_object(self, node: Attribute) -> Tuple[str, str, TypeInfo]:
         """
         Processes a method call which happens on an object
         """
@@ -98,7 +110,7 @@ class TypeTokenizer(Tokenizer):
         variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
         token = self._construct_call_token(method_name, variable_type)
         
-        return token
+        return (token, method_name, variable_type)
     
     def _process_subsequent_call(self):
         pass
@@ -123,7 +135,7 @@ class TypeTokenizer(Tokenizer):
             origin_name = value.id
         else:
             logger.error("Unable to determine origin name of Subscript in module {}"
-            .format(self._filepath))
+            .format(self.module_path))
         return origin_name, depth
     
     def _get_index_of_subscript(self, node: Subscript) -> int:
@@ -148,7 +160,7 @@ class TypeTokenizer(Tokenizer):
         elif isinstance(node.iter, Call):
             self._process_call(node.iter, tokens)
         else:
-            logger.error("Error, unknown iter type of For node in module {}".format(self._filepath))
+            logger.error("Error, unknown iter type of For node in module {}".format(self.module_path))
         
         self._search_node_body(node.body, tokens)
         tokens.append(Tokens.END_FOR.value)
@@ -191,12 +203,12 @@ class TypeTokenizer(Tokenizer):
                         target_variable += ".{}".format(node.target.attr)
                     else:
                         logger.debug("Assign node with attr that is not part of class variable assignment in module {}"
-                        .format(self._filepath))
+                        .format(self.module_path))
                         target_variable = node.target.attr
                 else:
                     target_variable = "UNKNOWN"
                     logger.error("Error, could not retrieve variable name for Ann/Assign node in {}"
-                    .format(self._filepath))
+                    .format(self.module_path))
             else: 
                 target_variable = "List Object"
         return target_variable
@@ -206,10 +218,10 @@ class TypeTokenizer(Tokenizer):
         if isinstance(node.value, Call):
             self._process_call(node.value, tokens)
             logger.warning("Un-annotated assignment for a variable in module {}"
-            .format(variable_name, self._filepath))
+            .format(variable_name, self.module_path))
         elif isinstance(node.value, Constant):
             logger.warning("Un-annotated assignment for variable [{}] with constant value in module {}"
-            .format(variable_name, self._filepath))
+            .format(variable_name, self.module_path))
 
 
     def _process_ann_assign(self, node: AnnAssign, tokens: List[str]):
@@ -230,4 +242,4 @@ class TypeTokenizer(Tokenizer):
             self._variable_cache.add_variable(complete_name, info)
 
         except AttributeError:
-            logger.error("Failed processing AnnAssign in module {}".format(self._filepath))
+            logger.error("Failed processing AnnAssign in module {}".format(self.module_path))
