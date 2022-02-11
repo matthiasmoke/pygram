@@ -25,13 +25,17 @@ class TypeInfo:
         if object_type is None:
             return None
 
-        if self._is_dict(object_type):
-                return object_type._contained_types[1]
-        if tuple_index > 0 and self._is_tuple_or_dict(object_type):
-            # always return the second index for Dict objects
-            return object_type._contained_types[tuple_index]
-        
-        return object_type
+        try:
+            if self._is_dict(object_type):
+                    return object_type._contained_types[1]
+            if tuple_index > 0 and self._is_tuple_or_dict(object_type):
+                # always return the second index for Dict objects
+                return object_type._contained_types[tuple_index]
+            
+            return object_type
+        except IndexError:
+            logger.error("Can not access contained type as tuple index {} exceeds contained types (len: {})"
+            .format(tuple_index, len(self._contained_types)))
     
     def _get_contained_type(self, depth: int) -> "TypeInfo":
         if depth == 0 or (self._is_tuple_or_dict(self) and depth == 1):

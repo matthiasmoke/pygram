@@ -205,7 +205,7 @@ class TypeTokenizer(Tokenizer):
         variable_name: str = self._get_variable_name_for_assignment(node)
         if isinstance(node.value, Call):
             self._process_call(node.value, tokens)
-            logger.warning("Un-annotated assignment for variable [{}] in module {}"
+            logger.warning("Un-annotated assignment for a variable in module {}"
             .format(variable_name, self._filepath))
         elif isinstance(node.value, Constant):
             logger.warning("Un-annotated assignment for variable [{}] with constant value in module {}"
