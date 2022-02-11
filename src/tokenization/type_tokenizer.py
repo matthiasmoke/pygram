@@ -214,7 +214,7 @@ class TypeTokenizer(Tokenizer):
 
     def _process_ann_assign(self, node: AnnAssign, tokens: List[str]):
         try:
-            info = TypeInfo(node=node.annotation)
+            info = TypeInfo(annotation_node=node.annotation)
             complete_name: str = ""
 
             if isinstance(node.target, Attribute):

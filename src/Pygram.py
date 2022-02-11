@@ -168,7 +168,7 @@ class Pygram:
                 path = os.path.abspath(arguments.f)
                 if os.path.isfile(path) and path.endswith(".py"):
                     if self.use_type_info:
-                        tokenizer = TypeTokenizer(path)
+                        tokenizer = TypeTokenizer(path, None)
                     else:
                         tokenizer = Tokenizer(path)
                     tokenizer.process_file()
