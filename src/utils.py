@@ -48,6 +48,18 @@ class Utils:
         return os.path.basename(os.path.normpath(path))
     
     @staticmethod
+    def generate_dotted_module_path(path: str, project_name: str) -> str:
+        """
+        Creates dotted module path from regular file path
+        """
+        project_only_path: str = Utils.get_sub_path(project_name, path)
+        # cut ending of python file
+        project_only_path = project_only_path[0:(len(project_only_path) - 3)]
+        project_only_path = project_only_path.replace("/", ".")
+        return project_only_path
+
+    
+    @staticmethod
     def get_sequence_string(sequence: List[str]) -> str:
         output: str = ""
         for token in sequence:

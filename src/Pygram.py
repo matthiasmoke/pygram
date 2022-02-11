@@ -98,9 +98,9 @@ class Pygram:
                 module_name = Utils.get_sub_path(directory_name, file)
 
                 if (self.use_type_info):
-                    tokenizer = TypeTokenizer(path, type_cache)
+                    tokenizer = TypeTokenizer(path, module_name, type_cache)
                 else:
-                    tokenizer = Tokenizer(path)
+                    tokenizer = Tokenizer(path, module_name)
                 tokenizer.process_file()
                 file_tokens = tokenizer.get_token_sequences()
                 sequence_list[module_name] = file_tokens
@@ -168,9 +168,9 @@ class Pygram:
                 path = os.path.abspath(arguments.f)
                 if os.path.isfile(path) and path.endswith(".py"):
                     if self.use_type_info:
-                        tokenizer = TypeTokenizer(path, None)
+                        tokenizer = TypeTokenizer(path, "File", None)
                     else:
-                        tokenizer = Tokenizer(path)
+                        tokenizer = Tokenizer(path, "File")
                     tokenizer.process_file()
                     print(str(tokenizer))
 

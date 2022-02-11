@@ -1,8 +1,10 @@
 import logging
 import ast
 import os
-from _ast import ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
+from _ast import ImportFrom, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
 from typing import List
+
+from ..utils import Utils
 from .tokens import Tokens
 
 
@@ -11,8 +13,9 @@ logger = logging.getLogger("main")
 
 class Tokenizer:
 
-    def __init__(self, filepath) -> None:
+    def __init__(self, filepath, module_name) -> None:
         self._filepath: str = filepath
+        self.module_path: str = Utils.generate_dotted_module_path(filepath, module_name)
         self._syntax_tree = None
         self.sequence_stream: List[str] = []
 
@@ -41,7 +44,7 @@ class Tokenizer:
         """
         if self._syntax_tree is None:
             logger.warning("Syntax tree is None, abort processing file {}"
-                           .format(os.path.basename(self._filepath)))
+                           .format(os.path.basename(self.module_path)))
             return None
         self._ast_depth_search()
         return self.sequence_stream
@@ -118,6 +121,8 @@ class Tokenizer:
             # The type annotation node is included here, so the whole method 
             # does not need an override in the typed tokenizer
             self._process_ann_assign(node, token_list)
+        elif isinstance(node, ImportFrom):
+            self._process_import_from(node)
     
     def _process_if_block(self, node: If, tokens):
         tokens.append(Tokens.IF.value)
@@ -225,7 +230,7 @@ class Tokenizer:
                 self._process_call(attribute.value, tokens)
                 token = attribute.attr + "()"
         else:
-            logger.error("Unable to determine method name in module {}".format(self._filepath))
+            logger.error("Unable to determine method name in module {}".format(self.module_path))
         
         tokens.append(token)
     
@@ -239,4 +244,7 @@ class Tokenizer:
             tokens.append(Tokens.END_FOR.value)
     
     def _process_ann_assign(self, node: ast.AnnAssign, tokens: List[str]):
+        pass
+
+    def _process_import_from(self, node: ImportFrom):
         pass
