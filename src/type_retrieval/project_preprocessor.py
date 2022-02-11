@@ -56,7 +56,7 @@ class TypePreprocessor():
                 cache.add_function(name, return_type)
             if isinstance(node, ClassDef):
                 sub_class_cache: ClassCache = self._process_class(node)
-                cache.add_sub_class(sub_class_cache)
+                cache.add_sub_class(node.name, sub_class_cache)
         return cache
         
 
