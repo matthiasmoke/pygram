@@ -37,13 +37,11 @@ class TypeTokenizer(Tokenizer):
         class_tokens = []
         class_name = node.name
         self._variable_cache.set_class_scope(node.name)
-        self._variable_cache.add_variable("self", TypeInfo(class_name))
+        self._variable_cache.add_variable("self", TypeInfo(label=class_name))
         for child in node.body:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
-                self._variable_cache.set_class_function_scope(child.name)
                 result = self._process_function_def(child)
                 class_tokens.append(result)
-                self._variable_cache.leave_class_function_scope()
             else:
                 self._classify_and_process_node(child, class_tokens)
         self._variable_cache.leave_class_scope()
@@ -107,7 +105,8 @@ class TypeTokenizer(Tokenizer):
             object_name = node.value.id
 
         variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
-        token = "TEST"
+        token = ""
+        # if variable type is not found, check if the method is called on a class directly
         if variable_type is None:
             is_type = self._type_cache.find_module_for_type_with_function(object_name, method_name, self._import_cache)
             if is_type is not None:
@@ -116,9 +115,6 @@ class TypeTokenizer(Tokenizer):
             token = self._construct_call_token(method_name, variable_type)
         
         return (token, method_name, variable_type)
-    
-    def _process_subsequent_call(self):
-        pass
     
     def _construct_call_token(self, method_name: str, object_type: TypeInfo) -> str:
         output: str = ""
@@ -154,6 +150,8 @@ class TypeTokenizer(Tokenizer):
                 index = int(index_str)
         except ValueError:
             return 1
+        except AttributeError:
+            return 1
         return index
             
     
@@ -164,6 +162,8 @@ class TypeTokenizer(Tokenizer):
             self._cache_variables_in_for_block(node)
         elif isinstance(node.iter, Call):
             self._process_call(node.iter, tokens)
+        elif isinstance(node.iter, Attribute):
+            pass
         else:
             logger.error("Error, unknown iter type of For node in module {}".format(self.module_path))
         

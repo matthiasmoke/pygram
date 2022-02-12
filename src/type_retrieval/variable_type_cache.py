@@ -8,8 +8,7 @@ logger = logging.getLogger("main")
 class Scope(Enum):
     MODULE = 1
     CLASS = 2
-    CLASSFUNCTION = 3
-    FUNCTION = 4
+    FUNCTION = 3
 
 class VariableTypeCache:
 
@@ -35,17 +34,6 @@ class VariableTypeCache:
         self.current_scope = Scope.MODULE
         self.class_variables.clear()
     
-    def set_class_function_scope(self, name):
-        self.function_scope_name = name
-        self.previous_scope = self.current_scope
-        self.current_scope = Scope.CLASSFUNCTION
-    
-    def leave_class_function_scope(self):
-        self.current_scope = self.previous_scope
-        self.previous_scope = Scope.CLASSFUNCTION
-        self.function_variables.clear()
-
-    
     def set_function_scope(self, name: str):
         self.function_scope_name = name
         self.previous_scope = self.current_scope
@@ -64,7 +52,10 @@ class VariableTypeCache:
         elif scope == Scope.CLASS:
             self.class_variables[variable_name] = variable_type
         else:
-            self.function_variables[variable_name] = variable_type
+            if self.function_scope_name == "__init__" and self.previous_scope == Scope.CLASS:
+                self.class_variables[variable_name] = variable_type
+            else:
+                self.function_variables[variable_name] = variable_type
 
 
     def get_variable_type(self, variable_name: str, depth: int, subscript_index: int) -> TypeInfo:
