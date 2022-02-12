@@ -81,19 +81,16 @@ class VariableTypeCache:
             variable_type = self.module_variables.get(variable_name, None)
         
         if variable_type is None:
-            logger.error("Could not find variable [{}] in cache of module {}"
+            logger.warning("Could not find variable [{}] in cache of module {}"
             .format(variable_name, self.module_path))
             return None
         
         variable_type = variable_type.get_type(depth, subscript_index)
 
         if variable_type is None:
-            logger.error("Could not retrieve type of variable [{}] for depth {} and subscript index {}"
+            logger.warning("Could not retrieve type of variable [{}] for depth {} and subscript index {}"
             .format(variable_name, depth, subscript_index))
             return None
 
         return variable_type
     
-
-
-

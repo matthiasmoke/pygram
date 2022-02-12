@@ -71,10 +71,3 @@ class TypePreprocessor():
 
     def _is_function_node(self, node) -> bool:
         return isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef)
-
-
-    
-
-
-
-

@@ -9,6 +9,9 @@ class ImportCache():
         # maps aliases to real class names. Ignores cases where the "as" directive names to types equally
         self._as_imports: Dict[str, str] = {}
     
+    def get_module(self) -> str:
+        return self._module_path
+    
     def add_import(self, node: ImportFrom) -> None:
         module: str = node.module
         level: int = node.level
@@ -22,20 +25,21 @@ class ImportCache():
         
         self._imports[complete_path] = classes
             
-    def get_modules_for_class(self, class_name: str) -> str:
+    def get_modules_for_name(self, name: str) -> str:
         """
-        Retruns the modules that contain the given class
+        Retruns the modules that contain the given class/function name
         """
         modules: List[str] = []
+
         # convert alias to original class name
-        module: str = self._as_imports.get(class_name, None)
+        module: str = self._as_imports.get(name, None)
         if module is not None:
-            class_name = module
+            name = module
         
         for key, value in self._imports.items():
-            if class_name in value:
+            if name in value:
                 modules.append(key)
-        
+        modules.append(self._module_path)
         return modules
 
     def _generate_complete_path(self, module_path_postfix: str, level: int) -> str:

@@ -7,7 +7,7 @@ from .TokenCountModel import TokenCountModel
 from .NGramModel import NGramModel
 from .utils import Utils
 from .tokenization.tokenizer import Tokenizer
-from.tokenization.type_tokenizer import TypeTokenizer
+from .tokenization.type_tokenizer import TypeTokenizer
 from .Reporting import ReportingService
 
 from typing import Dict, Tuple

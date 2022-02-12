@@ -81,8 +81,7 @@ class TypeTokenizer(Tokenizer):
             elif isinstance(attribute.value, Call):
                 prev_method_name, prev_type = self._process_call(attribute.value, tokens)
                 method_name = attribute.attr
-                modules: List[str] = self._import_cache.get_modules_for_class(prev_type.get_label())
-                type: TypeInfo = self._type_cache.get_return_type_of_class_function(prev_method_name, prev_type.get_label(), modules)
+                type: TypeInfo = self._type_cache.get_return_type_of_class_function(prev_method_name, prev_type.get_label(), self._import_cache)
                 variable_type = type
                 token = self._construct_call_token(attribute.attr, type)
             else:
@@ -108,7 +107,13 @@ class TypeTokenizer(Tokenizer):
             object_name = node.value.id
 
         variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
-        token = self._construct_call_token(method_name, variable_type)
+        token = "TEST"
+        if variable_type is None:
+            is_type = self._type_cache.find_module_for_type_with_function(object_name, method_name, self._import_cache)
+            if is_type is not None:
+                token = "{}.{}()".format(object_name, method_name)
+        else:
+            token = self._construct_call_token(method_name, variable_type)
         
         return (token, method_name, variable_type)
     

@@ -1,4 +1,6 @@
 from typing import Dict, List
+
+from .import_cache import ImportCache
 from .type_info import TypeInfo
 import logging
 
@@ -13,23 +15,43 @@ class TypeCache:
     def add_file_cache(self, module_path: str, cache: "FileCache") -> None:
         self.modules[module_path] = cache
     
-    def get_return_type_of_function(self, function_name: str, potential_modules: List[str]) -> TypeInfo:
-        return_type: TypeInfo = None
-        for module in potential_modules:
-            if module in potential_modules:
-                file_cache: FileCache = self.modules[module]
-                return_type = file_cache.get_function_type(function_name)
-        return return_type
+    def get_return_type_of_function(self, function_name: str, import_cache: ImportCache) -> TypeInfo:
+        caches: List[FileCache] = self._get_file_caches_for_name(function_name, import_cache)
+        for cache in caches:
+            return_type = cache.get_function_type(function_name)
+
+            if return_type is not None:
+                return return_type
+        logger.error("Could not find function {} for module {} in type cache"
+        .format(function_name, import_cache.get_module))
+        return None
     
-    def get_return_type_of_class_function(self, function_name: str, class_name: str, potential_modules: List[str]) -> TypeInfo:
-        return_type: TypeInfo = None
-        for module in potential_modules:
-            if module in potential_modules:
-                file_cache: FileCache = self.modules[module]
-                return_type = file_cache.get_class_function_type(function_name, class_name)
-        return return_type
+    def get_return_type_of_class_function(self, function_name: str, class_name: str, import_cache: ImportCache) -> TypeInfo:
+        caches: List[FileCache] = self._get_file_caches_for_name(class_name, import_cache)
+        for cache in caches:
+            return_type = cache.get_class_function_type(function_name, class_name)
+            if return_type is not None:
+                return return_type
+        
+        logger.error("Could not find function {} for class {} in module {} in type cache"
+        .format(function_name, class_name, import_cache.get_module()))
+        return None
     
-                
+    def find_module_for_type_with_function(self, type_name: str, function_name: str, import_cache: ImportCache) -> str:
+        potential_modules: List[str] = import_cache.get_modules_for_name(type_name)
+
+        for module in potential_modules:
+            cache: FileCache = self.modules[module]
+            if cache.contains_class_function(type_name, function_name):
+                return module
+        return None
+            
+    def _get_file_caches_for_name(self, name: str, import_cache: ImportCache) -> List["FileCache"]:
+        potential_modules: List[str] = import_cache.get_modules_for_name(name)
+        output: List[FileCache] = []
+        for module in potential_modules:
+                output.append(self.modules[module])
+        return output
 
 
 class FileCache:
@@ -59,6 +81,13 @@ class FileCache:
             logger.error("Could not find class {} in {}".format(class_name, self.file_name))
 
         return class_cache.get_function_type(function_name)
+    
+    def contains_class_function(self, class_name: str, function_name: str) -> bool:
+        class_cache: ClassCache = self._class_cache.get(class_name, None)
+
+        if class_cache is not None:
+            return class_cache.contains_function(function_name)
+        return False
 
 class ClassCache:
 
@@ -72,6 +101,9 @@ class ClassCache:
     
     def add_sub_class(self, class_name: str, cache: "ClassCache"):
         self.sub_classes[class_name] = cache
+    
+    def contains_function(self, function_name) -> bool:
+        return function_name in self.functions
     
     def get_function_type(self, function_name: str) -> TypeInfo:
         type: TypeInfo = self.functions.get(function_name, None)
