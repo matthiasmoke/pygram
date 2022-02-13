@@ -20,7 +20,8 @@ class TypeTokenizer(Tokenizer):
         super().__init__(filepath, module_name)
         self._type_cache: TypeCache = type_cache
         self._import_cache = ImportCache(self.module_path)
-        self._variable_cache: VariableTypeCache = VariableTypeCache(filepath) 
+        self._variable_cache: VariableTypeCache = VariableTypeCache(filepath)
+        self._type_cache.set_current_import_cache(self._import_cache)
     
     def _load_syntax_tree(self):
         if os.path.isfile(self._filepath):
@@ -37,7 +38,9 @@ class TypeTokenizer(Tokenizer):
         class_tokens = []
         class_name = node.name
         self._variable_cache.set_class_scope(node.name)
-        self._variable_cache.add_variable("self", TypeInfo(label=class_name))
+        class_type = TypeInfo(label=class_name)
+        self._type_cache.populate_type_info_with_module(class_type)
+        self._variable_cache.add_variable("self", class_type)
         for child in node.body:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
                 result = self._process_function_def(child)
@@ -79,7 +82,7 @@ class TypeTokenizer(Tokenizer):
             elif isinstance(attribute.value, Call):
                 prev_method_name, prev_type = self._process_call(attribute.value, tokens)
                 method_name = attribute.attr
-                type: TypeInfo = self._type_cache.get_return_type_of_class_function(prev_method_name, prev_type.get_label(), self._import_cache)
+                type: TypeInfo = self._type_cache.get_return_type_of_class_function(prev_method_name, prev_type.get_label())
                 variable_type = type
                 token = self._construct_call_token(attribute.attr, type)
             else:
@@ -108,9 +111,9 @@ class TypeTokenizer(Tokenizer):
         token = ""
         # if variable type is not found, check if the method is called on a class directly
         if variable_type is None:
-            is_type = self._type_cache.find_module_for_type_with_function(object_name, method_name, self._import_cache)
-            if is_type is not None:
-                token = "{}.{}()".format(object_name, method_name)
+            module: str = self._type_cache.find_module_for_type_with_function(object_name, method_name)
+            if module is not None and module != "":
+                token = "{}.{}.{}()".format(module, object_name, method_name)
         else:
             token = self._construct_call_token(method_name, variable_type)
         
@@ -119,7 +122,7 @@ class TypeTokenizer(Tokenizer):
     def _construct_call_token(self, method_name: str, object_type: TypeInfo) -> str:
         output: str = ""
         if object_type is not None:
-            output += "{}.".format(object_type.get_label())
+            output += "{}.".format(str(object_type))
         output += "{}()".format(method_name)
         return output
     
@@ -232,6 +235,7 @@ class TypeTokenizer(Tokenizer):
     def _process_ann_assign(self, node: AnnAssign, tokens: List[str]):
         try:
             info = TypeInfo(annotation_node=node.annotation)
+            self._type_cache.populate_type_info_with_module(info)
             complete_name: str = ""
 
             if isinstance(node.target, Attribute):

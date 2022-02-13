@@ -25,7 +25,7 @@ class ImportCache():
         
         self._imports[complete_path] = classes
             
-    def get_modules_for_name(self, name: str) -> str:
+    def get_module_imports_for_type(self, name: str) -> str:
         """
         Retruns the modules that contain the given class/function name
         """
@@ -39,7 +39,7 @@ class ImportCache():
         for key, value in self._imports.items():
             if name in value:
                 modules.append(key)
-        modules.append(self._module_path)
+        
         return modules
 
     def _generate_complete_path(self, module_path_postfix: str, level: int) -> str:

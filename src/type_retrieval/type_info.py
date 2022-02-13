@@ -12,10 +12,20 @@ class TypeInfo:
         self._contained_types: List[TypeInfo] = []
         if annotation_node is not None:
             self._create_from_annotation_node(annotation_node)
+        self.fully_qualified_name: str = label
+    
+    def __str__(self) -> str:
+        if self.fully_qualified_name == self._label:
+            return self._label
+        else:
+            return self.fully_qualified_name
     
     def get_label(self) -> str:
         return self._label
     
+    def set_fully_qualified_name(self, name: str) -> None:
+        self.fully_qualified_name = name
+
     def set_contained_types(self, type_info_list: List["TypeInfo"]) -> None:
         self._contained_types = type_info_list
     
