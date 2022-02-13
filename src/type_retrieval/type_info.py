@@ -23,6 +23,9 @@ class TypeInfo:
     def get_label(self) -> str:
         return self._label
     
+    def get_contained_types(self) -> List["TypeInfo"]:
+        return self._contained_types
+    
     def set_fully_qualified_name(self, name: str) -> None:
         self.fully_qualified_name = name
 

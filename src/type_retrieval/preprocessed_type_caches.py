@@ -87,6 +87,11 @@ class TypeCache:
     
     def populate_type_info_with_module(self, type_info: TypeInfo) -> None:
         type_name: str = type_info.get_label()
+        contained_types: List[TypeInfo] = type_info.get_contained_types()
+
+        for type in contained_types:
+            self.populate_type_info_with_module(type)
+
         if type_name is not None and type_name != "":
             potential_modules = self._get_modules_for_name(type_name)
             module_path: str = ""
