@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import ImportFrom, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
+from _ast import ImportFrom, Import, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
 from typing import List, Tuple
 
 from ..type_retrieval.import_cache import ImportCache
@@ -31,9 +31,9 @@ class TypeTokenizer(Tokenizer):
                 return tree
         return None
     
-    def _process_import_from(self, node: ImportFrom) -> None:
+    def _process_import(self, node):
         self._import_cache.add_import(node)
-    
+
     def _process_class_def(self, node: ClassDef) -> List[str]:
         class_tokens = []
         class_name = node.name
@@ -72,8 +72,10 @@ class TypeTokenizer(Tokenizer):
         if (isinstance(node.func, Name)):
             method_name = node.func.id
             module: str = self._type_cache.find_module_for_function(method_name)
-            token = "{}.{}()".format(module, method_name)
-            # TODO get origin of function for fully classified name
+            if module != "":
+                token = "{}.{}()".format(module, method_name)
+            else:
+                token = "{}()".format(method_name)
         elif isinstance(node.func, Attribute):
             attribute: Attribute = node.func
 
@@ -82,8 +84,13 @@ class TypeTokenizer(Tokenizer):
 
             elif isinstance(attribute.value, Call):
                 prev_method_name, prev_type = self._process_call(attribute.value, tokens)
+                prev_type_label = None
+
+                if prev_type is not None:
+                    prev_type_label = prev_type.get_label()
+
                 method_name = attribute.attr
-                type: TypeInfo = self._type_cache.get_return_type_of_class_function(prev_method_name, prev_type.get_label())
+                type: TypeInfo = self._type_cache.get_return_type(prev_method_name, class_name=prev_type_label)
                 variable_type = type
                 token = self._construct_call_token(attribute.attr, type)
             else:
@@ -115,6 +122,8 @@ class TypeTokenizer(Tokenizer):
             module: str = self._type_cache.find_module_for_type_with_function(object_name, method_name)
             if module is not None and module != "":
                 token = "{}.{}.{}()".format(module, object_name, method_name)
+            else:
+                token = "{}()".format(method_name)
         else:
             token = self._construct_call_token(method_name, variable_type)
         

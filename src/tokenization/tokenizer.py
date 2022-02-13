@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import ImportFrom, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
+from _ast import ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
 from typing import List
 
 from ..utils import Utils
@@ -121,8 +121,8 @@ class Tokenizer:
             # The type annotation node is included here, so the whole method 
             # does not need an override in the typed tokenizer
             self._process_ann_assign(node, token_list)
-        elif isinstance(node, ImportFrom):
-            self._process_import_from(node)
+        elif isinstance(node, ImportFrom) or isinstance(node, Import):
+            self._process_import(node)
     
     def _process_if_block(self, node: If, tokens):
         tokens.append(Tokens.IF.value)
@@ -246,5 +246,5 @@ class Tokenizer:
     def _process_ann_assign(self, node: ast.AnnAssign, tokens: List[str]):
         pass
 
-    def _process_import_from(self, node: ImportFrom):
+    def _process_import(self, node):
         pass

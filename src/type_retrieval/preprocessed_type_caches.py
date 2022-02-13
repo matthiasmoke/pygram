@@ -20,6 +20,9 @@ class TypeCache:
         self._current_import_cache = import_cache
     
     def get_return_type_of_function(self, function_name: str) -> TypeInfo:
+        """
+        Gets the return type of a given function 
+        """
         caches: List[FileCache] = self._get_file_caches_for_name(function_name)
         for cache in caches:
             return_type = cache.get_function_type(function_name)
@@ -30,16 +33,11 @@ class TypeCache:
         .format(function_name, self._current_import_cache.get_module))
         return None
     
-    def get_return_type_of_class_function(self, function_name: str, class_name: str) -> TypeInfo:
-        caches: List[FileCache] = self._get_file_caches_for_name(class_name)
-        for cache in caches:
-            return_type = cache.get_class_function_type(function_name, class_name)
-            if return_type is not None:
-                return return_type
-        
-        logger.error("Could not find function {} for class {} in module {} in type cache"
-        .format(function_name, class_name, self._current_import_cache.get_module()))
-        return None
+    def get_return_type(self, function_name: str, class_name: str = None) -> TypeInfo:
+        if class_name is not None:
+            return self._get_return_type_of_class_function(function_name, class_name)
+        else:
+            return self._get_return_type_of_function(function_name)
     
     def find_module_for_type_with_function(self, type_name: str, function_name: str) -> str:
         """
@@ -48,12 +46,16 @@ class TypeCache:
         potential_modules: List[str] = self._get_modules_for_name(type_name)
 
         for module in potential_modules:
-            cache: FileCache = self.modules[module]
-            if cache.contains_class_function(type_name, function_name):
-                return module
+            cache: FileCache = self.modules.get(module, None)
+            if cache is not None:
+                if cache.contains_class_function(type_name, function_name):
+                    return module
         return None
     
     def find_module_for_function(self, function_name):
+        """
+        Retruns the module that contains the given function name
+        """
         potential_modules: List[str] = self._get_modules_for_name(function_name)
 
         module_path: str = ""
@@ -99,6 +101,28 @@ class TypeCache:
             type_info.set_fully_qualified_name("{}{}".format(module_path, type_name))
         logger.error("Can not determine module for empty type")
     
+    def _get_return_type_of_class_function(self, function_name: str, class_name: str) -> TypeInfo:
+        caches: List[FileCache] = self._get_file_caches_for_name(class_name)
+        for cache in caches:
+            return_type = cache.get_class_function_type(function_name, class_name)
+            if return_type is not None:
+                return return_type
+        
+        logger.error("Could not find function {} for class {} in module {} in type cache"
+        .format(function_name, class_name, self._current_import_cache.get_module()))
+        return None
+
+    def _get_return_type_of_function(self, function_name: str) -> TypeInfo:
+        caches: List[FileCache] = self._get_file_caches_for_name(function_name)
+        for cache in caches:
+            return_type = cache.get_function_type(function_name)
+            if return_type is not None:
+                return return_type
+        logger.error("Could not find function {} for module {} in type cache"
+        .format(function_name, self._current_import_cache.get_module()))
+        return None
+
+    
     def _get_modules_for_name(self, name: str) -> str:
         """
         Retruns the modules that contain the given class/function name
@@ -119,10 +143,12 @@ class TypeCache:
         """
         Returns the file caches for a given name
         """
-        potential_modules: List[str] = self._current_import_cache.get_modules_for_name(name)
+        potential_modules: List[str] = self._get_modules_for_name(name)
         output: List[FileCache] = []
         for module in potential_modules:
-                output.append(self.modules[module])
+            cache: FileCache = self.modules.get(module, None)
+            if cache is not None:
+                output.append(cache)
         return output
 
 
