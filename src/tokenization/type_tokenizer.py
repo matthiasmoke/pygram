@@ -66,12 +66,13 @@ class TypeTokenizer(Tokenizer):
         if len(node.args):
             self._search_node_body(node.args, tokens)
         
-        token = "UNKNOWN"
-        method_name = ""
+        token: str = "UNKNOWN"
+        method_name: str = ""
         variable_type: TypeInfo = None
         if (isinstance(node.func, Name)):
             method_name = node.func.id
-            token = self._construct_call_token(method_name, None)
+            module: str = self._type_cache.find_module_for_function(method_name)
+            token = "{}.{}()".format(module, method_name)
             # TODO get origin of function for fully classified name
         elif isinstance(node.func, Attribute):
             attribute: Attribute = node.func

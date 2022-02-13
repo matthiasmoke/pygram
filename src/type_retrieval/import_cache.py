@@ -25,9 +25,9 @@ class ImportCache():
         
         self._imports[complete_path] = classes
             
-    def get_module_imports_for_type(self, name: str) -> str:
+    def get_module_imports_for_name(self, name: str) -> str:
         """
-        Retruns the modules that contain the given class/function name
+        Retruns the imported modules that contain the given class/function name
         """
         modules: List[str] = []
 

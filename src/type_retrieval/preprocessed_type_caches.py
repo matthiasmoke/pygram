@@ -45,13 +45,29 @@ class TypeCache:
         """
         Returns a module that contains the given type with given function name
         """
-        potential_modules: List[str] = self._get_modules_for_type(type_name)
+        potential_modules: List[str] = self._get_modules_for_name(type_name)
 
         for module in potential_modules:
             cache: FileCache = self.modules[module]
             if cache.contains_class_function(type_name, function_name):
                 return module
         return None
+    
+    def find_module_for_function(self, function_name):
+        potential_modules: List[str] = self._get_modules_for_name(function_name)
+
+        module_path: str = ""
+        if len(potential_modules) == 1:
+            module_path = potential_modules[0]
+        elif len(potential_modules) > 1:
+            logger.error("Unable to uniquely map module to function {} in {}"
+            .format(function_name, self._current_import_cache.get_module()))
+        elif len(potential_modules) == 0:
+            logger.error("Could not find matching modules for funcion {} in {}"
+            .format(function_name, self._current_import_cache.get_module()))
+
+        return module_path
+
     
     def module_contains_type(self, module_path: str, type: str) -> bool:
         module: FileCache = self.modules.get(module_path, None)
@@ -60,10 +76,17 @@ class TypeCache:
             return module.contains_type(type)
         return False
     
+    def module_contains_function(self, module_path: str, function_name: str) -> bool:
+        module: FileCache = self.modules.get(module_path, None)
+
+        if module is not None:
+            return module.contains_function(function_name)
+        return False
+    
     def populate_type_info_with_module(self, type_info: TypeInfo) -> None:
         type_name: str = type_info.get_label()
         if type_name is not None and type_name != "":
-            potential_modules = self._get_modules_for_type(type_name)
+            potential_modules = self._get_modules_for_name(type_name)
             module_path: str = ""
             if len(potential_modules) == 1:
                 module_path = "{}.".format(potential_modules[0])
@@ -76,17 +99,20 @@ class TypeCache:
             type_info.set_fully_qualified_name("{}{}".format(module_path, type_name))
         logger.error("Can not determine module for empty type")
     
-    def _get_modules_for_type(self, name: str) -> str:
+    def _get_modules_for_name(self, name: str) -> str:
         """
         Retruns the modules that contain the given class/function name
         """
-        imported_modules: List[str] = self._current_import_cache.get_module_imports_for_type(name)
+        imported_modules: List[str] = self._current_import_cache.get_module_imports_for_name(name)
         modules: List[str] = []
         modules += imported_modules
 
         current_module: str = self._current_import_cache.get_module()
         if self.module_contains_type(current_module, name):
             modules.append(current_module)
+        elif self.module_contains_function(current_module, name):
+            modules.append(current_module)
+        
         return modules
 
     def _get_file_caches_for_name(self, name: str) -> List["FileCache"]:
@@ -141,6 +167,11 @@ class FileCache:
             if contains_type is True:
                 return True
         return False
+    
+    def contains_function(self, function_name: str) -> bool:
+        for key in self.function_cache:
+            if key == function_name:
+                return True
 
 class ClassCache:
 
