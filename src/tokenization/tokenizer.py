@@ -111,12 +111,12 @@ class Tokenizer:
             self._process_call(node, token_list)
         elif isinstance(node, Tuple):
             self._process_tuple(node, token_list)
+        elif isinstance(node, Return):
+            self._process_retrun(node, token_list)
         elif isinstance(node, Pass):
             token_list.append(Tokens.PASS.value)
         elif isinstance(node, Break):
             token_list.append(Tokens.BREAK.value)
-        elif isinstance(node, Return):
-            token_list.append(Tokens.RETURN.value)
         elif isinstance(node, AnnAssign):
             # The type annotation node is included here, so the whole method 
             # does not need an override in the typed tokenizer
@@ -190,6 +190,11 @@ class Tokenizer:
 
     def _process_expression(self, node: Expr, tokens: List[str]):
         self._classify_and_process_node(node.value, tokens)
+    
+    def _process_retrun(self, node: Return, tokens: List[str]):
+        tokens.append(Tokens.RETURN.value)
+        if isinstance(node.value, Call):
+            self._process_call(node.value, tokens)
 
     #### Functions to override in typed tokenization
 

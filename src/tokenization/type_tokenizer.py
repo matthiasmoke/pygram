@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import ImportFrom, Import, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
+from _ast import Constant, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
 from typing import List, Tuple
 
 from ..type_retrieval.import_cache import ImportCache
@@ -71,7 +71,9 @@ class TypeTokenizer(Tokenizer):
         variable_type: TypeInfo = None
         if (isinstance(node.func, Name)):
             method_name = node.func.id
+            variable_type = self._type_cache.get_return_type(method_name)
             module: str = self._type_cache.find_module_for_function(method_name)
+            
             if module != "":
                 token = "{}.{}()".format(module, method_name)
             else:
@@ -93,6 +95,17 @@ class TypeTokenizer(Tokenizer):
                 type: TypeInfo = self._type_cache.get_return_type(prev_method_name, class_name=prev_type_label)
                 variable_type = type
                 token = self._construct_call_token(attribute.attr, type)
+            elif isinstance(attribute.value, Constant):
+                method_name = attribute.attr
+                token = self._construct_call_token(method_name, None)
+            elif isinstance(attribute.value, Attribute):
+                if hasattr(attribute.value.value, "id"):
+                    method_name = attribute.attr
+                    variable = attribute.value.attr
+                    prefix = attribute.value.value.id
+                    complete_name = "{}.{}".format(prefix, variable)
+                    variable_type = self._variable_cache.get_variable_type(complete_name, 0, 0)
+                    token = self._construct_call_token(method_name, variable_type)
             else:
                 logger.error("Unable to determine Attribute type on Call in module {}"
                 .format(self.module_path))
