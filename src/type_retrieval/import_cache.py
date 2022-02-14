@@ -5,6 +5,7 @@ class ImportCache():
     def __init__(self, module_path: str) -> None:
         self._module_path: str = module_path
         self._module_path_parts = module_path.split(".")
+        self._module_level = len(self._module_path_parts) - 1
         self._imports: Dict[str, List[str]] = {}
         # maps aliases to real class names. Ignores cases where the "as" directive names to types equally
         self._as_imports: Dict[str, str] = {}
@@ -58,6 +59,8 @@ class ImportCache():
 
     def _generate_complete_path(self, module_path_postfix: str, level: int) -> str:
         prefix: str = ""
+        # calculate the level difference between the imported and the current module
+        level = level + (self._module_level - level)
         for i in range (0, level):
             prefix += "{}.".format(self._module_path_parts[i])
         return "{}{}".format(prefix, module_path_postfix)
