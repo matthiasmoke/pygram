@@ -15,7 +15,7 @@ class TypeInfo:
         self.fully_qualified_name: str = label
     
     def __str__(self) -> str:
-        if self.fully_qualified_name == self._label:
+        if self.fully_qualified_name == self._label or self.fully_qualified_name == "":
             return self._label
         else:
             return self.fully_qualified_name
@@ -33,15 +33,15 @@ class TypeInfo:
         self._contained_types = type_info_list
     
     def get_type(self, depth: int, tuple_index: int) -> "TypeInfo":
-        object_type = self._get_contained_type(depth)
+        object_type: TypeInfo = self._get_contained_type(depth)
 
         if object_type is None:
             return None
 
         try:
-            if self._is_dict(object_type):
+            if self.is_dict():
                     return object_type._contained_types[1]
-            if tuple_index > 0 and self._is_tuple_or_dict(object_type):
+            if tuple_index > 0 and object_type.is_tuple_or_dict():
                 # always return the second index for Dict objects
                 return object_type._contained_types[tuple_index]
             
@@ -51,27 +51,31 @@ class TypeInfo:
             .format(tuple_index, len(self._contained_types)))
     
     def _get_contained_type(self, depth: int) -> "TypeInfo":
-        if depth == 0 or (self._is_tuple_or_dict(self) and depth == 1):
+        if depth == 0 or (self.is_tuple_or_dict() and depth == 1):
             return self
 
         try:
             current_child = self._contained_types[0]
             for i in range(1, depth):
                 # when requested type is within tuple or dict ignore depth and return it
-                if self._is_tuple_or_dict(current_child) and (depth - i == 1):
+                if current_child.is_tuple_or_dict() and (depth - i == 1):
                     return current_child
-                current_child = current_child._contained_types[0]
+                # if current type is dict, use second contained type, ant not the first as it is the key
+                elif current_child.is_dict():
+                    current_child = current_child._contained_types[1]
+                else:
+                    current_child = current_child._contained_types[0]
 
         except IndexError:
             logger.warning("Insufficient number of children contained in type respective to the requested depth.")
             return None
         return current_child
     
-    def _is_tuple_or_dict(self, type_info: "TypeInfo") -> bool:
-        return type_info._label == "Dict" or type_info._label == "Tuple"
+    def is_tuple_or_dict(self) -> bool:
+        return self._label == "Dict" or self._label == "Tuple"
     
-    def _is_dict(self, type_info: "TypeInfo") -> bool:
-        return type_info._label == "Dict"
+    def is_dict(self) -> bool:
+        return self._label == "Dict"
     
     def _create_from_annotation_node(self, node) -> None:
         if isinstance(node, Name):
