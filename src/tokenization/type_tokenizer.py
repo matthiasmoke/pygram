@@ -62,94 +62,107 @@ class TypeTokenizer(Tokenizer):
         self._variable_cache.leave_function_scope()
         return tokens
     
-    def _process_call(self, node: Call, tokens) -> Tuple[str, TypeInfo]:
+    def _process_call(self, node: Call, tokens: List[str]) -> None:
+        # process function arguments
         if len(node.args):
             self._search_node_body(node.args, tokens)
-        
+
         token: str = "UNKNOWN"
-        method_name: str = ""
-        variable_type: TypeInfo = None
-        if (isinstance(node.func, Name)):
-            method_name = node.func.id
-            variable_type = self._type_cache.get_return_type(method_name)
-            module: str = self._type_cache.find_module_for_function(method_name)
-            
-            if module != "":
-                token = "{}.{}()".format(module, method_name)
-            else:
-                token = "{}()".format(method_name)
+        function_name: str = ""
+
+        if isinstance(node.func, Name):
+            function_name = node.func.id
+            module: str = self._type_cache.find_module_for_function(function_name)
+            token = self._construct_call_token(function_name, module=module)
+            tokens.append(token)
         elif isinstance(node.func, Attribute):
             attribute: Attribute = node.func
-
             if isinstance(attribute.value, Subscript) or isinstance(attribute.value, Name):
-                token, method_name, variable_type = self._process_call_on_object(attribute)
-
-            elif isinstance(attribute.value, Call):
-                prev_method_name, prev_type = self._process_call(attribute.value, tokens)
-                prev_type_label = None
-
-                if prev_type is not None:
-                    prev_type_label = prev_type.get_label()
-
-                method_name = attribute.attr
-                type: TypeInfo = self._type_cache.get_return_type(prev_method_name, class_name=prev_type_label)
-                variable_type = type
-                if type is not None:
-                    self._type_cache.populate_type_info_with_module(type)
-                token = self._construct_call_token(attribute.attr, type)
+                self._process_call_on_object(attribute, tokens)
             elif isinstance(attribute.value, Constant):
-                method_name = attribute.attr
-                token = self._construct_call_token(method_name, None)
+                function_name = attribute.attr
+                token = self._construct_call_token(function_name)
+                tokens.append(token)
+            elif isinstance(attribute.value, Call):
+                self._process_subsequent_call(attribute, tokens)
             elif isinstance(attribute.value, Attribute):
-                if hasattr(attribute.value.value, "id"):
-                    method_name = attribute.attr
-                    variable = attribute.value.attr
-                    prefix = attribute.value.value.id
-                    complete_name = "{}.{}".format(prefix, variable)
-                    variable_type = self._variable_cache.get_variable_type(complete_name, 0, 0)
-                    token = self._construct_call_token(method_name, variable_type)
+                function_name = attribute.attr
+                variable: str = attribute.value.attr
+                prefix: str = attribute.value.value.id
+                complete_name: str = "{}.{}".format(prefix, variable)
+                variable_type: TypeInfo = self._variable_cache.get_variable_type(complete_name, 0, 0)
+                token = self._construct_call_token(function_name, type=variable_type)
+                tokens.append(token)
             else:
-                logger.error("Unable to determine Attribute type on Call in module {}"
-                .format(self.module_path))
+                logger.error("Unable to determine Attribute type on Call in module {}, line {}"
+                .format(self.module_path, attribute.lineno))
         else:
-            logger.error("Unable to determine method name in module {}".format(self.module_path))
-        
-        tokens.append(token)
-        return (method_name, variable_type)
+            logger.error("Unable to determine method name in module {} in line {}"
+            .format(self.module_path, node.lineno))   
 
-    def _process_call_on_object(self, node: Attribute) -> Tuple[str, str, TypeInfo]:
+
+    def _process_call_on_object(self, node: Attribute, tokens: List[str]) -> None: 
         """
-        Processes a method call which happens on an object
+        Processes a function call which happens on an object
         """
-        method_name: str = node.attr
+        function_name: str = node.attr
         subscript_depth: int = 0
         subscript_index: int = 0
+        token: str = "UNKNOWN"
         if isinstance(node.value, Subscript):
             object_name, subscript_depth = self._get_origin_of_subscript(node.value, 0)
             subscript_index = self._get_index_of_subscript(node.value)
         elif isinstance(node.value, Name):
             object_name = node.value.id
-
+        
         variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
-        token = ""
         # if variable type is not found, check if the method is called on a class directly
         if variable_type is None:
-            module: str = self._type_cache.find_module_for_type_with_function(object_name, method_name)
-            if module is not None and module != "":
-                token = "{}.{}.{}()".format(module, object_name, method_name)
-            else:
-                token = "{}()".format(method_name)
+            module: str = self._type_cache.find_module_for_type_with_function(object_name, function_name)
+            token = self._construct_call_token(function_name, module=module, object_name=object_name)
+            #TODO if module is not found, it means that the object, on which the function is called, 
+            # belongs to an imported type which is not contained in the type cache. Find out where it comes from
         else:
-            token = self._construct_call_token(method_name, variable_type)
-        
-        return (token, method_name, variable_type)
+            token = self._construct_call_token(function_name, type=variable_type)
+        tokens.append(token)
     
-    def _construct_call_token(self, method_name: str, object_type: TypeInfo) -> str:
-        output: str = ""
-        if object_type is not None:
-            output += "{}.".format(str(object_type))
-        output += "{}()".format(method_name)
-        return output
+    def _process_subsequent_call(self, node: Attribute, tokens: List[str]) -> None:
+        """
+        Processes a subsequent call, meaning a function call which happens on the return type of another function call
+        """
+        function_name: str = node.attr
+        self._process_call(node.value, tokens)
+        prev_function_name, prev_module =  self._retrieve_module_and_function_name_from_token(tokens[-1])
+        return_type: TypeInfo = self._type_cache.get_return_type(prev_function_name, module=prev_module)
+        tokens.append(self._construct_call_token(function_name, type=return_type))
+    
+    def _retrieve_module_and_function_name_from_token(self, token: str) -> Tuple[str, str]:
+        """
+        Returns a tuple which contains (function name, module)
+        """
+        token_parts: List[str] = token.split(".")
+        # split function name from module and remove brackets in the end
+        function_name: str = token_parts[-1][0:-2]
+        module_path: str = None
+
+        if len(token_parts) > 1:
+            module_path = token[0:len(token) - len(function_name) - 3]
+
+        return (function_name, module_path)
+
+    def _construct_call_token(self, function_name: str, module: str = None, object_name: str = None, type: TypeInfo = None) -> str:
+        """
+        Builds the call token out of the function name, and either the module and optionally the object name or just the type information
+        """
+        token: str = "{}()".format(function_name)
+
+        if module is not None and module != "":
+            if object_name is not None and object_name != "":
+                module = "{}.{}".format(module, object_name)
+            token = "{}.{}".format(module, token) 
+        elif type is not None:
+            token = "{}.{}".format(str(type), token)
+        return token
     
     def _get_origin_of_subscript(self, node: Subscript, depth: int) -> Tuple[str, int]:
         """

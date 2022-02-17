@@ -19,23 +19,15 @@ class TypeCache:
     def set_current_import_cache(self, import_cache: ImportCache) -> None:
         self._current_import_cache = import_cache
     
-    def get_return_type_of_function(self, function_name: str) -> TypeInfo:
+    def get_return_type(self, function_name: str, class_name: str = None, module: str = None) -> TypeInfo:
         """
-        Gets the return type of a given function 
+        Retrieves the return type of a given function. 
+        If class name is not specified, the method only searches for functions outside of classes
         """
-        caches: List[FileCache] = self._get_file_caches_for_name(function_name)
-        for cache in caches:
-            return_type = cache.get_function_type(function_name)
-
-            if return_type is not None:
-                return return_type
-        logger.error("Could not find function {} for module {} in type cache"
-        .format(function_name, self._current_import_cache.get_module))
-        return None
-    
-    def get_return_type(self, function_name: str, class_name: str = None) -> TypeInfo:
         if class_name is not None:
             return self._get_return_type_of_class_function(function_name, class_name)
+        elif module is not None:
+            return self._get_return_type_of_function_by_module(function_name, module)
         else:
             return self._get_return_type_of_function(function_name)
     
@@ -70,7 +62,6 @@ class TypeCache:
 
         return module_path
 
-    
     def module_contains_type(self, module_path: str, type: str) -> bool:
         module: FileCache = self.modules.get(module_path, None)
 
@@ -84,6 +75,10 @@ class TypeCache:
         if module is not None:
             return module.contains_function(function_name)
         return False
+    
+    def module_exists_in_cache(self, module_path: str) -> bool:
+        module: FileCache = self.modules.get(module_path, None)
+        return module is not None
     
     def populate_type_info_with_module(self, type_info: TypeInfo) -> None:
         type_name: str = type_info.get_label()
@@ -119,6 +114,9 @@ class TypeCache:
         return None
 
     def _get_return_type_of_function(self, function_name: str) -> TypeInfo:
+        """
+        Retrieves the return type of a function by its name. The search is only applied to functions outside of classes
+        """
         caches: List[FileCache] = self._get_file_caches_for_name(function_name)
         for cache in caches:
             return_type = cache.get_function_type(function_name)
@@ -127,6 +125,29 @@ class TypeCache:
         logger.error("Could not find function {} for module {} in type cache"
         .format(function_name, self._current_import_cache.get_module()))
         return None
+    
+    def _get_return_type_of_function_by_module(self, function_name: str, module: str):
+        """
+        Retrieves the return type of a function by searching in the given module. 
+        Includes class and standalone functions.
+        """
+        if self.module_exists_in_cache(module):
+            info: TypeInfo = self._get_return_type_of_function(function_name)
+            self.populate_type_info_with_module(info)
+            return info
+        else:
+            # remove last part of module path to maybe remove class information
+            last_part: str = module.split(".")[-1]
+            stripped_module_path: str = module[0: len(module) - len(last_part) - 1]
+
+            if self.module_exists_in_cache(stripped_module_path):
+                info: TypeInfo = self._get_return_type_of_class_function(function_name, last_part)
+                self.populate_type_info_with_module(info)
+                return info
+        
+        logger.debug("Could not find function \"{}\" in module {}".format(function_name, module))        
+        return None
+
 
     
     def _get_modules_for_name(self, name: str) -> str:
