@@ -94,6 +94,8 @@ class TypeTokenizer(Tokenizer):
                 method_name = attribute.attr
                 type: TypeInfo = self._type_cache.get_return_type(prev_method_name, class_name=prev_type_label)
                 variable_type = type
+                if type is not None:
+                    self._type_cache.populate_type_info_with_module(type)
                 token = self._construct_call_token(attribute.attr, type)
             elif isinstance(attribute.value, Constant):
                 method_name = attribute.attr
