@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
+from _ast import ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
 from typing import List
 
 from ..utils import Utils
@@ -113,6 +113,8 @@ class Tokenizer:
             self._process_tuple(node, token_list)
         elif isinstance(node, Return):
             self._process_retrun(node, token_list)
+        elif isinstance(node, Yield):
+            self._process_yield(node, token_list)
         elif isinstance(node, Pass):
             token_list.append(Tokens.PASS.value)
         elif isinstance(node, Break):
@@ -193,6 +195,11 @@ class Tokenizer:
     
     def _process_retrun(self, node: Return, tokens: List[str]):
         tokens.append(Tokens.RETURN.value)
+        if isinstance(node.value, Call):
+            self._process_call(node.value, tokens)
+
+    def _process_yield(self, node: Return, tokens: List[str]):
+        tokens.append(Tokens.YIELD.value)
         if isinstance(node.value, Call):
             self._process_call(node.value, tokens)
 
