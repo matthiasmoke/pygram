@@ -2,11 +2,12 @@ from typing import List, Dict
 from _ast import ImportFrom, Import
 
 class ImportCache():
-    def __init__(self, module_path: str) -> None:
+    def __init__(self, module_path: str, available_modules: List[str]) -> None:
         self._module_path: str = module_path
         self._module_path_parts = module_path.split(".")
         self._module_level = len(self._module_path_parts) - 1
         self._imports: Dict[str, List[str]] = {}
+        self._available_modules = available_modules
         # maps aliases to real class names. Ignores cases where the "as" directive names to types equally
         self._as_imports: Dict[str, str] = {}
     
@@ -58,12 +59,20 @@ class ImportCache():
                 self._as_imports[module.asname] = name 
 
     def _generate_complete_path(self, module_path_postfix: str, level: int) -> str:
+        """
+        Generates the complete path out of the relative import path and level
+        """
         prefix: str = ""
         # calculate the level difference between the imported and the current module
         level = level + (self._module_level - level)
         for i in range (0, level):
             prefix += "{}.".format(self._module_path_parts[i])
-        return "{}{}".format(prefix, module_path_postfix)
+        complete_path = "{}{}".format(prefix, module_path_postfix)
+
+        if complete_path not in self._available_modules:
+            # if the generated path is not present in the available modules, it is a native import
+            return module_path_postfix
+        return complete_path
         
 
         

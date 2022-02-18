@@ -19,7 +19,7 @@ class TypeTokenizer(Tokenizer):
     def __init__(self, filepath, module_name, type_cache: TypeCache) -> None:
         super().__init__(filepath, module_name)
         self._type_cache: TypeCache = type_cache
-        self._import_cache = ImportCache(self.module_path)
+        self._import_cache = ImportCache(self.module_path, type_cache.module_list)
         self._variable_cache: VariableTypeCache = VariableTypeCache(filepath)
         self._type_cache.set_current_import_cache(self._import_cache)
     

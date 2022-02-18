@@ -12,9 +12,11 @@ class TypeCache:
         self.name: str = name
         self._current_import_cache: ImportCache = None
         self.modules: Dict[str, FileCache] = {}
+        self.module_list: List[str] = []
     
     def add_file_cache(self, module_path: str, cache: "FileCache") -> None:
         self.modules[module_path] = cache
+        self.module_list.append(module_path)
     
     def set_current_import_cache(self, import_cache: ImportCache) -> None:
         self._current_import_cache = import_cache
