@@ -87,10 +87,8 @@ class TypeTokenizer(Tokenizer):
                 self._process_subsequent_call(attribute, tokens)
             elif isinstance(attribute.value, Attribute):
                 function_name = attribute.attr
-                variable: str = attribute.value.attr
-                prefix: str = attribute.value.value.id
-                complete_name: str = "{}.{}".format(prefix, variable)
-                variable_type: TypeInfo = self._variable_cache.get_variable_type(complete_name, 0, 0)
+                variable: str = self._get_prefix_from_attribute(attribute.value)
+                variable_type: TypeInfo = self._variable_cache.get_variable_type(variable, 0, 0)
                 token = self._construct_call_token(function_name, type=variable_type)
                 tokens.append(token)
             else:
@@ -99,6 +97,23 @@ class TypeTokenizer(Tokenizer):
         else:
             logger.error("Unable to determine method name in module {} in line {}"
             .format(self.module_path, node.lineno))   
+    
+    def _get_prefix_from_attribute(self, node: Attribute) -> str:
+        """
+        Constructs the complete name from an attribute node.
+        Is used e.g. for cases like os.path.abspath
+        """
+        name: str = node.attr
+        prefix: str = ""
+        if isinstance(node.value, Name):
+            prefix = node.value.id
+        elif isinstance(node.value, Attribute):
+            prefix = self._get_name_from_attribute(node.value)
+        
+        if prefix == "":
+            return name
+        else:
+            return "{}.{}".format(prefix, name)
 
 
     def _process_call_on_object(self, node: Attribute, tokens: List[str]) -> None: 

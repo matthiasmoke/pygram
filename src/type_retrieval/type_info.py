@@ -1,6 +1,6 @@
 
 from typing import List
-from _ast import Subscript, Name, Tuple, Constant
+from _ast import Subscript, Name, Tuple, Constant, Attribute
 import logging
 
 logger = logging.getLogger("main")
@@ -86,6 +86,19 @@ class TypeInfo:
             self._label = node.value.id
             contained = self._get_type_from_subscript(node)
             self.set_contained_types(contained)
+        elif isinstance(node, Attribute):
+            name: str = self._get_name_from_attribute(node)
+            self._label = name
+    
+    def _get_name_from_attribute(self, node: Attribute) -> str:
+        name: str = node.attr
+        prefix: str = ""
+        if isinstance(node.value, Name):
+            prefix = node.value.id
+        elif isinstance(node.value, Attribute):
+            prefix = self._get_name_from_attribute(node.value)
+        
+        return "{}.{}".format(prefix, name)
     
     def _get_type_from_subscript(self, node: Subscript) -> List["TypeInfo"]:
         slice = node.slice.value
