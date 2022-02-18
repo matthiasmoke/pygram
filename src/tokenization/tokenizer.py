@@ -233,18 +233,24 @@ class Tokenizer:
             self._search_node_body(node.args, tokens)
         
         token = "UNKNOWN"
+        function_name: str = ""
         if (isinstance(node.func, Name)):
-            token = node.func.id + "()"
+            function_name = node.func.id
+            token = self._construct_call_token(function_name)
         elif isinstance(node.func, Attribute):
             attribute: Attribute = node.func
-            token = attribute.attr + "()"
+            function_name = attribute.attr
+            token = self._construct_call_token(function_name)
             if isinstance(attribute.value, Call):
                 self._process_call(attribute.value, tokens)
-                token = attribute.attr + "()"
+
         else:
             logger.error("Unable to determine method name in module {}".format(self.module_path))
         
         tokens.append(token)
+    
+    def _construct_call_token(self, function_name) -> str:
+        return "{}()".format(function_name)
     
     def _process_tuple(self, node: Tuple, tokens: List[str]):
         self._search_node_body(node.elts, tokens)
