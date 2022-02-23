@@ -63,8 +63,11 @@ class ImportCache():
         Generates the complete path out of the relative import path and level
         """
         prefix: str = ""
-        # calculate the level difference between the imported and the current module
-        level = level + (self._module_level - level)
+        complete_path: str = ""
+        # if level equals 1, the imported module lies in the same directory as the currently processed module
+        if level == 1:
+            level = self._module_level
+
         for i in range (0, level):
             prefix += "{}.".format(self._module_path_parts[i])
         complete_path = "{}{}".format(prefix, module_path_postfix)
