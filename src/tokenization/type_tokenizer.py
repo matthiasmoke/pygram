@@ -2,6 +2,7 @@ import logging
 import ast
 import os
 from _ast import Constant, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
+import _ast
 from typing import List, Tuple
 
 from ..type_retrieval.import_cache import ImportCache
@@ -230,23 +231,31 @@ class TypeTokenizer(Tokenizer):
         """
         Caches variables and their respective types which are used in a for block
         """
-        for_target_name: str = ""
+        for_target_names: List[str] = []
         if isinstance(node.target, Name):
-            for_target_name = node.target.id
+            for_target_names.append(node.target.id)
+        elif isinstance(node.target, _ast.Tuple):
+            for child in node.target.elts:
+                for_target_names.append(child.id)
         else:
-            logger.warning("Unprocessable For loop target")
+            logger.warning("Unprocessable For loop target in line {}".format(node.lineno))
 
-        iter_name: str = ""
-        subscript_depth: int = 1
-        subscript_index: int = 0
-        if isinstance(node.iter, Name):
-            iter_name = node.iter.id
-        elif isinstance(node.iter, Subscript):
-            iter_name, subscript_depth = self._get_origin_of_subscript(node.iter, subscript_depth)
-            subscript_index = self._get_index_of_subscript(node.iter)
-        
-        variable_type: TypeInfo = self._variable_cache.get_variable_type(iter_name, subscript_depth, subscript_index)
-        self._variable_cache.add_variable(for_target_name, variable_type)
+        target_index: int = 0
+        for target_name in for_target_names:
+            iter_name: str = ""
+            # depth is one, as the type on depth 0 is the type that contains the iterated objects (e.g. List)
+            subscript_depth: int = 1
+            subscript_index: int = 0
+            if isinstance(node.iter, Name):
+                iter_name = node.iter.id
+                subscript_index = target_index
+                target_index += 1
+            elif isinstance(node.iter, Subscript):
+                iter_name, subscript_depth = self._get_origin_of_subscript(node.iter, subscript_depth)
+                subscript_index = self._get_index_of_subscript(node.iter)
+            
+            variable_type: TypeInfo = self._variable_cache.get_variable_type(iter_name, subscript_depth, subscript_index)
+            self._variable_cache.add_variable(target_name, variable_type)
 
     def _get_variable_name_for_assignment(self, node) -> str:
         target_variable: str = ""
