@@ -58,7 +58,7 @@ class TypeInfo:
             return self
 
         try:
-            current_child = self._contained_types[0]
+            current_child: TypeInfo = self._contained_types[0]
             for i in range(1, depth):
                 # when requested type is within tuple or dict ignore depth and return it
                 if current_child.is_tuple_or_dict() and (depth - i == 1):

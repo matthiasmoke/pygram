@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
+from _ast import ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
 from typing import List
 
 from ..utils import Utils
@@ -112,6 +112,8 @@ class Tokenizer:
             self._process_retrun(node, token_list)
         elif isinstance(node, Yield):
             self._process_yield(node, token_list)
+        elif isinstance(node, Compare):
+            self._process_compare(node, token_list)
         elif isinstance(node, Pass):
             token_list.append(Tokens.PASS.value)
         elif isinstance(node, Break):
@@ -125,8 +127,10 @@ class Tokenizer:
     
     def _process_if_block(self, node: If, tokens):
         tokens.append(Tokens.IF.value)
-        if node.test and isinstance(node.test, Call):
-            self._process_call(node.test, tokens)
+        if node.test and isinstance(node.test, BoolOp):
+            self._process_bool_op(node.test, tokens)
+        else:
+            self._classify_and_process_node(node.test, tokens)
 
         self._search_node_body(node.body, tokens)
 
@@ -134,6 +138,17 @@ class Tokenizer:
             tokens.append(Tokens.ELSE.value)
             self._search_node_body(node.orelse, tokens)
         tokens.append(Tokens.END_IF.value)
+    
+    def _process_compare(self, node: Compare, tokens: List[str]):
+        self._classify_and_process_node(node.left, tokens)
+        self._search_node_body(node.comparators, tokens)
+    
+    def _process_bool_op(self, node: BoolOp, tokens):     
+        for child in node.values:
+            if isinstance(child, BoolOp):
+                self._process_bool_op(child, tokens)
+            else:
+                self._classify_and_process_node(child, tokens)
     
     def _process_while_block(self, node: While, tokens: List[str]):
             tokens.append(Tokens.WHILE.value)
