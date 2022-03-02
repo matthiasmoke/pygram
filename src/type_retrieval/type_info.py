@@ -39,10 +39,13 @@ class TypeInfo:
             return None
 
         try:
-            if self.is_dict():
-                    return object_type._contained_types[1]
-            if tuple_index > 0 and object_type.is_tuple_or_dict():
+            if object_type.is_dict() and depth == 0:
+                # as depth is 0 and the object is a dict, the call happens on the dictionary not the contained types
+                return self
+            if object_type.is_dict() and depth == 1:
                 # always return the second index for Dict objects
+                return object_type._contained_types[1]
+            if object_type.is_tuple_or_dict():
                 return object_type._contained_types[tuple_index]
             
             return object_type
@@ -60,7 +63,7 @@ class TypeInfo:
                 # when requested type is within tuple or dict ignore depth and return it
                 if current_child.is_tuple_or_dict() and (depth - i == 1):
                     return current_child
-                # if current type is dict, use second contained type, ant not the first as it is the key
+                # if current type is dict, use second contained type, ant not the first as it is usually the key
                 elif current_child.is_dict():
                     current_child = current_child._contained_types[1]
                 else:
