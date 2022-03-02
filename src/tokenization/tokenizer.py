@@ -17,7 +17,7 @@ class Tokenizer:
         self._filepath: str = filepath
         self.module_path: str = Utils.generate_dotted_module_path(filepath, module_name)
         self._syntax_tree = None
-        self.sequence_stream: List[str] = []
+        self.sequence_stream: List[List[str]] = []
 
         self._syntax_tree = self._load_syntax_tree()
     
@@ -34,9 +34,6 @@ class Tokenizer:
             output += "\n"
 
         return output
-    
-    def get_token_sequences(self):
-        return self.sequence_stream
 
     def process_file(self) -> List[List[str]]:
         """
@@ -85,7 +82,7 @@ class Tokenizer:
             self._classify_and_process_node(child, tokens)
         return tokens
     
-    def _classify_and_process_node(self, node, token_list: List[str]) -> List[str]:
+    def _classify_and_process_node(self, node, token_list: List[str]) -> None:
         logger.debug("Processing node {} in line {}".format(node, node.lineno))
         if isinstance(node, If):
             self._process_if_block(node, token_list)
@@ -140,6 +137,7 @@ class Tokenizer:
     
     def _process_while_block(self, node: While, tokens: List[str]):
             tokens.append(Tokens.WHILE.value)
+            self._classify_and_process_node(node.test, tokens)
             self._search_node_body(node.body, tokens)
             tokens.append(Tokens.END_WHILE.value)
     
@@ -262,7 +260,8 @@ class Tokenizer:
             tokens.append(Tokens.END_FOR.value)
     
     def _process_ann_assign(self, node: ast.AnnAssign, tokens: List[str]):
-        pass
+        if isinstance(node.value, Call):
+            self._process_call(node.value, tokens)
 
     def _process_import(self, node):
         pass
