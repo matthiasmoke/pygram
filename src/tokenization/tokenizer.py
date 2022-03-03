@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
+from _ast import Global, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
 from typing import List
 
 from ..utils import Utils
@@ -120,6 +120,12 @@ class Tokenizer:
             token_list.append(Tokens.PASS.value)
         elif isinstance(node, Break):
             token_list.append(Tokens.BREAK.value)
+        elif isinstance(node, Continue):
+            token_list.append(Tokens.CONTINUE.value)
+        elif isinstance(node, Global):
+            token_list.append(Tokens.GLOBAL.value)
+        elif isinstance(node, Delete):
+            token_list.append(Tokens.DEL.value)
         elif isinstance(node, AnnAssign):
             # The type annotation node is included here, so the whole method 
             # does not need an override in the typed tokenizer
