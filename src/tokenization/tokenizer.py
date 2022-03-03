@@ -83,6 +83,8 @@ class Tokenizer:
         return tokens
     
     def _classify_and_process_node(self, node, token_list: List[str]) -> None:
+        if node is None:
+            return
         logger.debug("Processing node {} in line {}".format(node, node.lineno))
         if isinstance(node, If):
             self._process_if_block(node, token_list)
@@ -125,13 +127,16 @@ class Tokenizer:
         elif isinstance(node, ImportFrom) or isinstance(node, Import):
             self._process_import(node)
     
-    def _process_if_block(self, node: If, tokens):
-        tokens.append(Tokens.IF.value)
-        if node.test and isinstance(node.test, BoolOp):
-            self._process_bool_op(node.test, tokens)
-        else:
-            self._classify_and_process_node(node.test, tokens)
+    def _process_test_expression(self, test_node, tokens: List[str]):
+        if test_node is not None:
+            if isinstance(test_node, BoolOp):
+                self._process_bool_op(test_node, tokens)
+            else:
+                self._classify_and_process_node(test_node, tokens)
 
+    def _process_if_block(self, node: If, tokens: List[str]):
+        tokens.append(Tokens.IF.value)
+        self._process_test_expression(node.test, tokens)
         self._search_node_body(node.body, tokens)
 
         if node.orelse:
@@ -152,14 +157,17 @@ class Tokenizer:
     
     def _process_while_block(self, node: While, tokens: List[str]):
             tokens.append(Tokens.WHILE.value)
-            self._classify_and_process_node(node.test, tokens)
+            self._process_test_expression(node.test, tokens)
             self._search_node_body(node.body, tokens)
+            if len(node.orelse):
+                tokens.append(Tokens.ELSE.value)
+                self._search_node_body(node.orelse, tokens)
             tokens.append(Tokens.END_WHILE.value)
     
     def _process_raise(self, node: Raise, tokens: List[str]):
             tokens.append(Tokens.RAISE.value)
-            if isinstance(node.exc, Call):
-                self._process_call(node.exc, tokens)
+            if hasattr(node, "exc"):
+                self._classify_and_process_node(node.exc, tokens)
     
     def _process_try_block(self, node: Try, tokens: List[str]):
         tokens.append(Tokens.TRY.value)
@@ -191,30 +199,30 @@ class Tokenizer:
     
     def _process_assert(self, node: Assert, tokens: List[str]):
             tokens.append(Tokens.ASSERT.value)
-            if node.test and isinstance(node.test, Call):
-                self._process_call(node.test, tokens)
+            if hasattr(node, "test"):
+                self._classify_and_process_node(node.test, tokens)
     
     def _process_assign(self, node, tokens: List[str]):
-        if isinstance(node.value, Call):
-            self._process_call(node.value, tokens)
+        if hasattr(node, "value"):
+            self._classify_and_process_node(node.value, tokens)
     
     def _process_await(self, node: Await, tokens: List[str]):
         tokens.append(Tokens.AWAIT.value)
-        if isinstance(node.value, Call):
-            self._process_call(node.value, tokens)
+        if hasattr(node, "value"):
+            self._classify_and_process_node(node.value, tokens)
 
     def _process_expression(self, node: Expr, tokens: List[str]):
         self._classify_and_process_node(node.value, tokens)
     
     def _process_retrun(self, node: Return, tokens: List[str]):
         tokens.append(Tokens.RETURN.value)
-        if isinstance(node.value, Call):
-            self._process_call(node.value, tokens)
+        if hasattr(node, "value"):
+            self._classify_and_process_node(node.value, tokens)
 
     def _process_yield(self, node: Return, tokens: List[str]):
         tokens.append(Tokens.YIELD.value)
-        if isinstance(node.value, Call):
-            self._process_call(node.value, tokens)
+        if hasattr(node, "value"):
+            self._classify_and_process_node(node.value, tokens)
 
     #### Functions to override in typed tokenization
 
@@ -272,6 +280,9 @@ class Tokenizer:
             tokens.append(Tokens.FOR.value)
             self._classify_and_process_node(node.iter, tokens)
             self._search_node_body(node.body, tokens)
+            if len(node.orelse):
+                tokens.append(Tokens.ELSE.value)
+                self._search_node_body(node.orelse, tokens)
             tokens.append(Tokens.END_FOR.value)
     
     def _process_ann_assign(self, node: ast.AnnAssign, tokens: List[str]):

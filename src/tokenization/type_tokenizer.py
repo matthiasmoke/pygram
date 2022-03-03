@@ -225,6 +225,9 @@ class TypeTokenizer(Tokenizer):
             logger.error("Error, unknown iter type of For node in module {}".format(self.module_path))
         
         self._search_node_body(node.body, tokens)
+        if len(node.orelse):
+            tokens.append(Tokens.ELSE.value)
+            self._search_node_body(node.orelse, tokens)
         tokens.append(Tokens.END_FOR.value)
     
     def _cache_variables_in_for_block(self, node: For):
