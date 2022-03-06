@@ -85,6 +85,7 @@ class TypeCache:
     def populate_type_info_with_module(self, type_info: TypeInfo) -> None:
         if type_info is None or type_info.fully_qualified_name != "":
             return
+        
         type_name: str = type_info.get_label()
         contained_types: List[TypeInfo] = type_info.get_contained_types()
         for type in contained_types:
@@ -102,7 +103,8 @@ class TypeCache:
                 logger.error("Could not find matching modules for type {} in {}"
                 .format(type_name, self._current_import_cache.get_module()))
             type_info.set_fully_qualified_name("{}{}".format(module_path, type_name))
-        logger.error("Can not determine module for empty type")
+        else:
+            logger.error("Can not determine module for empty type")
     
     def _get_return_type_of_class_function(self, function_name: str, class_name: str) -> TypeInfo:
         caches: List[FileCache] = self._get_file_caches_for_name(class_name)
@@ -154,7 +156,8 @@ class TypeCache:
     
     def _get_modules_for_name(self, name: str) -> str:
         """
-        Retruns the modules that contain the given class/function name
+        Retruns the modules that contain the given class/function name. 
+        If the name is nested (contains a path e.g. to an inner class) it is split and the first part is used
         """
         imported_modules: List[str] = self._current_import_cache.get_module_imports_for_name(name)
         modules: List[str] = []
