@@ -239,6 +239,9 @@ class Tokenizer:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
                 result = self._process_function_def(child)
                 class_tokens.append(result)
+            elif isinstance(child, ClassDef):
+                result = self._process_class_def(child)
+                class_tokens += result
             else:
                 self._classify_and_process_node(child, class_tokens)
 
