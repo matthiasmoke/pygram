@@ -27,9 +27,6 @@ class VariableTypeCache:
         self.function_variables: Dict[str, TypeInfo] = {}
     
     def set_class_scope(self, name: str) -> None:
-        if len(self.class_scopes):
-            name = self._get_inner_class_path(name)
-
         self.scope_stack.append(Scope.CLASS)
         self.class_scope_stack.append(name)
         
@@ -40,8 +37,9 @@ class VariableTypeCache:
         self.class_scopes[name]["self"] = class_type
 
     def leave_class_scope(self):
-        left_class: str = self.class_scope_stack.pop()
+        left_class: str = self.class_scope_stack[-1]
         del self.class_scopes[left_class]
+        self.class_scope_stack.pop()
         self.scope_stack.pop()
     
     def set_function_scope(self, name: str):
