@@ -21,7 +21,7 @@ class TypeTokenizer(Tokenizer):
         super().__init__(filepath, module_name)
         self._type_cache: TypeCache = type_cache
         self._import_cache = ImportCache(self.module_path, type_cache.module_list)
-        self._variable_cache: VariableTypeCache = VariableTypeCache(filepath)
+        self._variable_cache: VariableTypeCache = VariableTypeCache(self.module_path, type_cache)
         self._type_cache.set_current_import_cache(self._import_cache)
     
     def _load_syntax_tree(self):
@@ -37,15 +37,14 @@ class TypeTokenizer(Tokenizer):
 
     def _process_class_def(self, node: ClassDef) -> List[str]:
         class_tokens = []
-        class_name = node.name
         self._variable_cache.set_class_scope(node.name)
-        class_type = TypeInfo(label=class_name)
-        self._type_cache.populate_type_info_with_module(class_type)
-        self._variable_cache.add_variable("self", class_type)
         for child in node.body:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
                 result = self._process_function_def(child)
                 class_tokens.append(result)
+            elif isinstance(child, ClassDef):
+                result = self._process_class_def(child)
+                class_tokens += result
             else:
                 self._classify_and_process_node(child, class_tokens)
         self._variable_cache.leave_class_scope()
@@ -78,7 +77,7 @@ class TypeTokenizer(Tokenizer):
             tokens.append(token)
         elif isinstance(node.func, Attribute):
             attribute: Attribute = node.func
-            if isinstance(attribute.value, Subscript) or isinstance(attribute.value, Name):
+            if isinstance(attribute.value, Subscript) or isinstance(attribute.value, Name) or isinstance(attribute.value, Attribute):
                 self._process_call_on_object(attribute, tokens)
             elif isinstance(attribute.value, Constant):
                 function_name = attribute.attr
@@ -86,12 +85,6 @@ class TypeTokenizer(Tokenizer):
                 tokens.append(token)
             elif isinstance(attribute.value, Call):
                 self._process_subsequent_call(attribute, tokens)
-            elif isinstance(attribute.value, Attribute):
-                function_name = attribute.attr
-                variable: str = self._get_prefix_from_attribute(attribute.value)
-                variable_type: TypeInfo = self._variable_cache.get_variable_type(variable, 0, 0)
-                token = self._construct_call_token(function_name, type=variable_type)
-                tokens.append(token)
             else:
                 logger.error("Unable to determine Attribute type on Call in module {}, line {}"
                 .format(self.module_path, attribute.lineno))
@@ -99,23 +92,22 @@ class TypeTokenizer(Tokenizer):
             logger.error("Unable to determine method name in module {} in line {}"
             .format(self.module_path, node.lineno))   
     
-    def _get_prefix_from_attribute(self, node: Attribute) -> str:
+    def _get_path_from_attribute(self, node: Attribute) -> str:
         """
-        Constructs the complete name from an attribute node.
-        Is used e.g. for cases like os.path.abspath
+        Constructs the complete variable or function path from an attribute node.
+        Is used for nested calls, e.g. for cases like os.path.abspath or self.SomeInnerClass
         """
         name: str = node.attr
         prefix: str = ""
         if isinstance(node.value, Name):
             prefix = node.value.id
         elif isinstance(node.value, Attribute):
-            prefix = self._get_name_from_attribute(node.value)
+            prefix = self._get_path_from_attribute(node.value)
         
         if prefix == "":
             return name
         else:
             return "{}.{}".format(prefix, name)
-
 
     def _process_call_on_object(self, node: Attribute, tokens: List[str]) -> None: 
         """
@@ -130,6 +122,8 @@ class TypeTokenizer(Tokenizer):
             subscript_index = self._get_index_of_subscript(node.value)
         elif isinstance(node.value, Name):
             object_name = node.value.id
+        elif isinstance(node.value, Attribute):
+            object_name = self._get_path_from_attribute(node.value)
         
         variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
         # if variable type is not found, check if the method is called on a class directly
@@ -176,6 +170,8 @@ class TypeTokenizer(Tokenizer):
             if object_name is not None and object_name != "":
                 module = "{}.{}".format(module, object_name)
             token = "{}.{}".format(module, token) 
+        # elif module is None and object_name is not None:
+        #     token = "{}.{}".format(str(object_name), token)
         elif type is not None:
             token = "{}.{}".format(str(type), token)
         return token
@@ -191,6 +187,8 @@ class TypeTokenizer(Tokenizer):
             origin_name, depth = self._get_origin_of_subscript(value, depth)
         elif isinstance(value, Name):
             origin_name = value.id
+        elif isinstance(value, Attribute):
+            origin_name = self._get_path_from_attribute(value)
         else:
             logger.error("Unable to determine origin name of Subscript in module {}"
             .format(self.module_path))

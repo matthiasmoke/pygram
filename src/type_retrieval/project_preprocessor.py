@@ -58,6 +58,7 @@ class TypePreprocessor():
                 cache.add_function(name, return_type)
             if isinstance(node, ClassDef):
                 self._process_class(node, file_cache, class_stack=class_stack)
+                cache.add_function(node.name, None)
         file_cache.add_class(cache)
         class_stack.pop()
         

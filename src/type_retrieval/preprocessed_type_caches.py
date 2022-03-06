@@ -1,8 +1,9 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from .import_cache import ImportCache
 from .type_info import TypeInfo
 import logging
+import sys
 
 logger = logging.getLogger("main")
 
@@ -11,12 +12,17 @@ class TypeCache:
     def __init__(self, name: str) -> None:
         self.name: str = name
         self._current_import_cache: ImportCache = None
+        self._smallest_module_level = sys.maxsize
         self.modules: Dict[str, FileCache] = {}
         self.module_list: List[str] = []
     
     def add_file_cache(self, module_path: str, cache: "FileCache") -> None:
         self.modules[module_path] = cache
         self.module_list.append(module_path)
+        module_level: int = len(module_path.split("."))
+        if module_level < self._smallest_module_level:
+            self._smallest_module_level = module_level
+
     
     def set_current_import_cache(self, import_cache: ImportCache) -> None:
         self._current_import_cache = import_cache
@@ -78,9 +84,28 @@ class TypeCache:
             return module.contains_function(function_name)
         return False
     
-    def module_exists_in_cache(self, module_path: str) -> bool:
+    def _get_existing_module_in_cache(self, module_path: str) -> Tuple[str, str]:
+        """
+        Checks if a given module exists in the cache. If the it is not found,
+        the function always removes the last part of the path and checks again as long as 
+        the split path level is bigger than the smallest path level in the cache.
+        Returns the found module and the split part
+        """
         module: FileCache = self.modules.get(module_path, None)
-        return module is not None
+        module_path_parts: int = len(module_path.split("."))
+        number_of_splits: int = module_path_parts - self._smallest_module_level
+        class_name: str = ""
+        if module is None:
+            for index in range(0, number_of_splits):
+                split_path = module_path.rsplit(".", 1)
+                module_path = split_path[0]
+                class_name = "{}.{}".format(split_path[1], class_name)
+                module = self.modules.get(module_path, None)
+
+                if module is not None:
+                    return (module, class_name[:-1])
+
+        return (module, class_name)
     
     def populate_type_info_with_module(self, type_info: TypeInfo) -> None:
         if type_info is None or type_info.fully_qualified_name != "":
@@ -135,24 +160,17 @@ class TypeCache:
         Retrieves the return type of a function by searching in the given module. 
         Includes class and standalone functions.
         """
-        if self.module_exists_in_cache(module):
+        module, class_name = self._get_existing_module_in_cache(module)
+        if module is not None:
             info: TypeInfo = self._get_return_type_of_function(function_name)
-            self.populate_type_info_with_module(info)
-            return info
-        else:
-            # remove last part of module path to maybe remove class information
-            last_part: str = module.split(".")[-1]
-            stripped_module_path: str = module[0: len(module) - len(last_part) - 1]
-
-            if self.module_exists_in_cache(stripped_module_path):
-                info: TypeInfo = self._get_return_type_of_class_function(function_name, last_part)
+            
+            if info is None:
+                info = self._get_return_type_of_class_function(function_name, class_name)
                 self.populate_type_info_with_module(info)
                 return info
         
         logger.debug("Could not find function \"{}\" in module {}".format(function_name, module))        
         return None
-
-
     
     def _get_modules_for_name(self, name: str) -> str:
         """

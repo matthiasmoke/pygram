@@ -31,11 +31,20 @@ class ImportCache():
         if module is not None:
             name = module
         
-        for key, value in self._imports.items():
-            if name in value:
-                modules.append(key)
+        for module_path, modules_list in self._imports.items():
+            # Check if name is in imported modules
+            if name in modules_list:
+                modules.append(module_path)
+            elif self._name_has_part_of_imported_module(name, modules_list):
+                modules.append(module_path)
         
         return modules
+    
+    def _name_has_part_of_imported_module(self, name: str, modules: List[str]) -> bool:
+        for module in modules:
+            if module in name:
+                return True
+        return False
     
     def _process_import_from(self, node: ImportFrom):
         module: str = node.module
