@@ -77,4 +77,18 @@ class Utils:
                 output += ", "
         output += "]"
         return output
+    
+    @staticmethod
+    def create_full_class_name(name_stack: List[str]) -> str:
+        """
+        Creates the full class name out of a list of nested classes. 
+        For a list [Outer, Inner] the function returns Outer.Inner
+        """
+        output: str = ""
+        for index, item in enumerate(name_stack):
+            if index < len(name_stack) - 1:
+                output += "{}.".format(item)
+            else:
+                output += item
+        return output
 

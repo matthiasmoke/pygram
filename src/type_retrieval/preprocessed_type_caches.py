@@ -123,7 +123,7 @@ class TypeCache:
         """
         caches: List[FileCache] = self._get_file_caches_for_name(function_name)
         for cache in caches:
-            return_type = cache.get_function_type(function_name)
+            return_type = cache.get_function_return_type(function_name)
             if return_type is not None:
                 return return_type
         logger.error("Could not find function {} for module {} in type cache"
@@ -197,7 +197,7 @@ class FileCache:
     def add_function(self, function_name: str, type: TypeInfo):
         self.function_cache[function_name] = type
     
-    def get_function_type(self, function_name) -> TypeInfo:
+    def get_function_return_type(self, function_name) -> TypeInfo:
         function_return_type: TypeInfo = self.function_cache.get(function_name, None)
 
         if function_return_type is None:
@@ -210,7 +210,7 @@ class FileCache:
         if class_cache is None:
             logger.error("Could not find class {} in {}".format(class_name, self.file_name))
 
-        return class_cache.get_function_type(function_name)
+        return class_cache.get_function_return_type(function_name)
     
     def contains_class_function(self, class_name: str, function_name: str) -> bool:
         class_cache: ClassCache = self._class_cache.get(class_name, None)
@@ -221,7 +221,7 @@ class FileCache:
     
     def contains_type(self, type_name: str) -> bool:
         for key, value in self._class_cache.items():
-            contains_type: bool = value.contains_type(type_name)
+            contains_type: bool = value.is_type(type_name)
             if contains_type is True:
                 return True
         return False
@@ -236,27 +236,17 @@ class ClassCache:
     def __init__(self, class_name: str) -> None:
         self.type: str = class_name
         self.functions: Dict[str, TypeInfo] = {}
-        self.sub_classes: Dict[str, ClassCache] = {}
     
     def add_function(self, function_name: str, type: TypeInfo):
         self.functions[function_name] = type
     
-    def add_sub_class(self, class_name: str, cache: "ClassCache"):
-        self.sub_classes[class_name] = cache
-    
     def contains_function(self, function_name) -> bool:
         return function_name in self.functions
     
-    def contains_type(self, type_name: str) -> bool:
-        if self.type == type_name:
-            return True
-        else:
-            for key in self.sub_classes:
-                if key == type_name:
-                    return True
-        return False
+    def is_type(self, type_name: str) -> bool:
+        return self.type == type_name
 
-    def get_function_type(self, function_name: str) -> TypeInfo:
+    def get_function_return_type(self, function_name: str) -> TypeInfo:
         type: TypeInfo = self.functions.get(function_name, None)
         if type is None:
             logger.error("Could not find function {} in class {}".format(function_name, self.type))

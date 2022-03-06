@@ -1,5 +1,5 @@
 import os
-from typing import Tuple
+from typing import List, Tuple
 import logging
 from _ast import ClassDef, FunctionDef, AsyncFunctionDef
 from .preprocessed_type_caches import ClassCache, FileCache, TypeCache
@@ -41,23 +41,25 @@ class TypePreprocessor():
     def _search_ast(self, tree, cache: FileCache):
         for node in tree.body:
             if isinstance(node, ClassDef):
-                class_cache = self._process_class(node)
-                cache.add_class(class_cache)
+                self._process_class(node, cache)
             if self._is_function_node(node):
                 name, return_type = self._process_function(node)
                 cache.add_function(name, return_type)
 
-    def _process_class(self, class_node: ClassDef) -> ClassCache:
-        cache: ClassCache = ClassCache(class_node.name)
+    def _process_class(self, class_node: ClassDef, file_cache: FileCache, class_stack: List[str] = []) -> ClassCache:
+        class_name: str = class_node.name
+        class_stack.append(class_name)
+        class_name = Utils.create_full_class_name(class_stack)
+        cache: ClassCache = ClassCache(class_name)
 
         for node in class_node.body:
             if self._is_function_node(node):
                 name, return_type = self._process_function(node)
                 cache.add_function(name, return_type)
             if isinstance(node, ClassDef):
-                sub_class_cache: ClassCache = self._process_class(node)
-                cache.add_sub_class(node.name, sub_class_cache)
-        return cache
+                self._process_class(node, file_cache, class_stack=class_stack)
+        file_cache.add_class(cache)
+        class_stack.pop()
         
 
     def _process_function(self, node: FunctionDef) -> Tuple[str, TypeInfo]:
