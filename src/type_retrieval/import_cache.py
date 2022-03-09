@@ -77,8 +77,8 @@ class ImportCache():
         """
         prefix: str = ""
         complete_path: str = ""
-        # if level equals 1, the imported module lies in the same directory as the currently processed module
-        if level == 1:
+        # if level equals 0 or 1, the imported module lies in the same directory as the currently processed module
+        if level == 1 or level == 0:
             level = self._module_level
 
         for i in range (0, level):
