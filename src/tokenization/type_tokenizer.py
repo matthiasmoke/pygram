@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import Constant, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
+from _ast import arg, arguments ,Constant, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
 import _ast
 from typing import List, Tuple
 
@@ -56,6 +56,8 @@ class TypeTokenizer(Tokenizer):
         if isinstance(node, AsyncFunctionDef):
             tokens.append(Tokens.ASYNC.value)
         
+        # save function arguments to variable cache
+        self._process_arguments(node.args)
         tokens.append(Tokens.DEF.value)
         self._search_node_body(node.body, tokens)
         tokens.append(Tokens.END_DEF.value)
@@ -63,10 +65,10 @@ class TypeTokenizer(Tokenizer):
         return tokens
     
     def _process_call(self, node: Call, tokens: List[str]) -> None:
-        # process function arguments
+        
         if len(node.args):
             self._search_node_body(node.args, tokens)
-
+        
         token: str = "UNKNOWN"
         function_name: str = ""
 
@@ -317,3 +319,14 @@ class TypeTokenizer(Tokenizer):
 
         except AttributeError:
             logger.error("Failed processing AnnAssign in module {}".format(self.module_path))
+    
+    def _process_arguments(self, node: arguments) -> None:
+        for child in node.args:
+            if isinstance(child, arg):
+                if child.annotation is not None:
+                    info: TypeInfo = TypeInfo(child.annotation)
+                    self._type_cache.populate_type_info_with_module(info)
+                    name: str = child.arg
+                    self._variable_cache.add_variable(name, info)
+            else:
+                logger.error("Unknown argument node type in line {}".format(node.lineno))
