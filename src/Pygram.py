@@ -26,7 +26,7 @@ class Pygram:
         self.project_path: str = None
 
     @staticmethod
-    def _create_parser():
+    def _create_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(prog="pygram",
                                         description="N-Gram code analysis for Python projects")
         parser.add_argument("-f", help="Analyse single Python file")
@@ -101,8 +101,7 @@ class Pygram:
                     tokenizer: TypeTokenizer = TypeTokenizer(path, module_name, type_cache)
                 else:
                     tokenizer: Tokenizer = Tokenizer(path, module_name)
-                tokenizer.process_file()
-                file_tokens = tokenizer.get_token_sequences()
+                file_tokens = tokenizer.process_file()
                 sequence_list[module_name] = file_tokens
         return directory_name, sequence_list
     
