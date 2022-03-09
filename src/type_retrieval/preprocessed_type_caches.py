@@ -174,20 +174,24 @@ class TypeCache:
     
     def _get_modules_for_name(self, name: str) -> str:
         """
-        Retruns the modules that contain the given class/function name. 
-        If the name is nested (contains a path e.g. to an inner class) it is split and the first part is used
+        Retruns the modules that contain the given class/function name.
         """
+        potential_modules: List[str] = []
         imported_modules: List[str] = self._current_import_cache.get_module_imports_for_name(name)
         modules: List[str] = []
         modules += imported_modules
+        modules.append(self._current_import_cache.get_module())
 
-        current_module: str = self._current_import_cache.get_module()
-        if self.module_contains_type(current_module, name):
-            modules.append(current_module)
-        elif self.module_contains_function(current_module, name):
-            modules.append(current_module)
+        # check if a project internal module contains the name
+        for module in modules:
+            if self.module_contains_type(module, name):
+                potential_modules.append(module)
+            elif self.module_contains_function(module, name):
+                # only append module that contains a function with that name if there are no other modules yet
+                if len(potential_modules) < 1:
+                    potential_modules.append(module)
         
-        return modules
+        return potential_modules
 
     def _get_file_caches_for_name(self, name: str) -> List["FileCache"]:
         """
@@ -227,6 +231,7 @@ class FileCache:
 
         if class_cache is None:
             logger.error("Could not find class {} in {}".format(class_name, self.file_name))
+            return None
 
         return class_cache.get_function_return_type(function_name)
     

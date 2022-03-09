@@ -207,6 +207,8 @@ class TypeTokenizer(Tokenizer):
             return 1
         except AttributeError:
             return 1
+        except TypeError:
+            return 1
         return index
             
     
@@ -297,7 +299,7 @@ class TypeTokenizer(Tokenizer):
 
     def _process_ann_assign(self, node: AnnAssign, tokens: List[str]):
         try:
-            info = TypeInfo(annotation_node=node.annotation)
+            info: TypeInfo = TypeInfo(annotation_node=node.annotation)
             self._type_cache.populate_type_info_with_module(info)
             complete_name: str = ""
 

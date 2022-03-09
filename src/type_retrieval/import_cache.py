@@ -19,12 +19,13 @@ class ImportCache():
             self._process_import_from(node)
         else:
             self._process_import(node)
-            
+    
     def get_module_imports_for_name(self, name: str) -> str:
         """
-        Retruns the imported modules that contain the given class/function name
+        Retruns the imported modules that contain the given class/function name.
         """
         modules: List[str] = []
+        modules_found_for_name_part: List[str] = []
 
         # convert alias to original class name
         module: str = self._as_imports.get(name, None)
@@ -36,7 +37,10 @@ class ImportCache():
             if name in modules_list:
                 modules.append(module_path)
             elif self._name_has_part_of_imported_module(name, modules_list):
-                modules.append(module_path)
+                modules_found_for_name_part.append(module_path)
+        
+        if len(modules) == 0:
+            modules += modules_found_for_name_part
         
         return modules
     
