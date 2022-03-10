@@ -73,18 +73,14 @@ class Utils:
 
     
     @staticmethod
-    def get_sequence_string(sequence: List[str]) -> str:
-        output: str = ""
-        for token in sequence:
-            output += token
-        return output
-    
-    @staticmethod
     def get_list_string(list: List[str]) -> str:
         output = "["
 
         for i in range(0, len(list)):
-            output += list[i]
+            value = list[i]
+            if isinstance(value, int):
+                value = str(value)
+            output += value
 
             if i < len(list) - 1:
                 output += ", "

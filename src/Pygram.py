@@ -10,7 +10,7 @@ from .tokenization.tokenizer import Tokenizer
 from .tokenization.type_tokenizer import TypeTokenizer
 from .Reporting import ReportingService
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 class Pygram:
 
@@ -78,7 +78,7 @@ class Pygram:
         return True
     
     def _tokenize_project(self, directory: str) -> Tuple[str, Dict]:
-        sequence_list: Dict = {}
+        sequence_list: Dict[str, List[Tuple[str, int]]] = {}
         python_files = Utils.get_all_python_files_in_directory(directory)
         counter: int = len(python_files)
         directory_name = os.path.basename(directory)
@@ -101,7 +101,7 @@ class Pygram:
                     tokenizer: TypeTokenizer = TypeTokenizer(path, module_name, type_cache)
                 else:
                     tokenizer: Tokenizer = Tokenizer(path, module_name)
-                file_tokens = tokenizer.process_file()
+                file_tokens: List[Tuple(str, int)] = tokenizer.process_file()
                 sequence_list[module_name] = file_tokens
         return directory_name, sequence_list
     
