@@ -2,10 +2,12 @@ from typing import Dict, List, Tuple
 
 from .import_cache import ImportCache
 from .type_info import TypeInfo
+from ..utils import Utils
 import logging
 import sys
 
 logger = logging.getLogger("main")
+utils: Utils = Utils()
 
 class TypeCache: 
 
@@ -65,8 +67,9 @@ class TypeCache:
             logger.error("Unable to uniquely map module to function {} in {}"
             .format(function_name, self._current_import_cache.get_module()))
         elif len(potential_modules) == 0:
-            logger.error("Could not find matching modules for funcion {} in {}"
-            .format(function_name, self._current_import_cache.get_module()))
+            if utils.is_not_a_builtin_function(function_name):
+                logger.error("Could not find matching modules for funcion {} in {}"
+                .format(function_name, self._current_import_cache.get_module()))
 
         return module_path
 
@@ -125,8 +128,9 @@ class TypeCache:
                 logger.error("Unable to uniquely map module to type {} in {}"
                 .format(type_name, self._current_import_cache.get_module()))
             elif len(potential_modules) == 0:
-                logger.error("Could not find matching modules for type {} in {}"
-                .format(type_name, self._current_import_cache.get_module()))
+                if type_name != "str" and type_name != "bool" and type_name != "int":
+                    logger.error("Could not find matching modules for type {} in {}"
+                    .format(type_name, self._current_import_cache.get_module()))
             type_info.set_fully_qualified_name("{}{}".format(module_path, type_name))
         else:
             logger.error("Can not determine module for empty type")

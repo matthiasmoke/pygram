@@ -12,6 +12,7 @@ from .tokenizer import Tokenizer
 from ..type_retrieval.type_info import TypeInfo
 from ..type_retrieval.variable_type_cache import VariableTypeCache
 from .tokens import Tokens
+from ..utils import Utils
 
 logger = logging.getLogger("main")
 
@@ -93,23 +94,6 @@ class TypeTokenizer(Tokenizer):
         else:
             logger.error("Unable to determine method name in module {} in line {}"
             .format(self.module_path, node.lineno))   
-    
-    def _get_path_from_attribute(self, node: Attribute) -> str:
-        """
-        Constructs the complete variable or function path from an attribute node.
-        Is used for nested calls, e.g. for cases like os.path.abspath or self.SomeInnerClass
-        """
-        name: str = node.attr
-        prefix: str = ""
-        if isinstance(node.value, Name):
-            prefix = node.value.id
-        elif isinstance(node.value, Attribute):
-            prefix = self._get_path_from_attribute(node.value)
-        
-        if prefix == "":
-            return name
-        else:
-            return "{}.{}".format(prefix, name)
 
     def _process_call_on_object(self, node: Attribute, tokens: List[str]) -> None: 
         """
@@ -125,7 +109,7 @@ class TypeTokenizer(Tokenizer):
         elif isinstance(node.value, Name):
             object_name = node.value.id
         elif isinstance(node.value, Attribute):
-            object_name = self._get_path_from_attribute(node.value)
+            object_name = Utils.get_full_name_from_attribute_node(node.value)
         
         variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
         # if variable type is not found, check if the method is called on a class directly
@@ -190,7 +174,7 @@ class TypeTokenizer(Tokenizer):
         elif isinstance(value, Name):
             origin_name = value.id
         elif isinstance(value, Attribute):
-            origin_name = self._get_path_from_attribute(value)
+            origin_name = Utils.get_full_name_from_attribute_node(value)
         else:
             logger.error("Unable to determine origin name of Subscript in module {}"
             .format(self.module_path))
@@ -263,57 +247,37 @@ class TypeTokenizer(Tokenizer):
             self._variable_cache.add_variable(target_name, variable_type)
 
     def _get_variable_name_for_assignment(self, node) -> str:
-        target_variable: str = ""
+        variable_name: str = ""
+        if isinstance(node, Name):
+            variable_name = node.id
+        elif isinstance(node, Attribute):
+            variable_name = Utils.get_full_name_from_attribute_node(node)
+        else:
+            variable_name = "UNKNOWN"
+            logger.error("Error, could not retrieve variable name for Ann/Assign node in {}"
+            .format(self.module_path))
+        return variable_name
 
-        if isinstance(node, AnnAssign) or isinstance(node, ast.Assign):
-            variable_is_class_field: bool = False
-            if hasattr(node, "target"): 
-                if hasattr(node.target, "id"):
-                    target_variable = node.target.id
-                    if target_variable == "self":
-                        variable_is_class_field = True
+    def _process_assign(self, node: _ast.Assign, tokens: List[str]):
+        if hasattr(node, "target"):
+            variable_name: str = self._get_variable_name_for_assignment(node.target)
+        elif hasattr(node, "targets"):
+            variable_name: str = self._get_variable_name_for_assignment(node.targets[0])
 
-                elif hasattr(node.target, "attr"):
-                    if variable_is_class_field:
-                        target_variable += ".{}".format(node.target.attr)
-                    else:
-                        logger.debug("Assign node with attr that is not part of class variable assignment in module {}"
-                        .format(self.module_path))
-                        target_variable = node.target.attr
-                else:
-                    target_variable = "UNKNOWN"
-                    logger.error("Error, could not retrieve variable name for Ann/Assign node in {}"
-                    .format(self.module_path))
-            else: 
-                target_variable = "List Object"
-        return target_variable
-
-    def _process_assign(self, node, tokens: List[str]):
-        variable_name: str = self._get_variable_name_for_assignment(node)
         if isinstance(node.value, Call):
             self._process_call(node.value, tokens)
             logger.warning("Un-annotated assignment for a variable in module {}"
             .format(variable_name, self.module_path))
         elif isinstance(node.value, Constant):
-            logger.warning("Un-annotated assignment for variable [{}] with constant value in module {}"
-            .format(variable_name, self.module_path))
+            logger.warning("Un-annotated assignment for variable [{}] with constant value in module {}, lineno: {}"
+            .format(variable_name, self.module_path, node.lineno))
 
 
     def _process_ann_assign(self, node: AnnAssign, tokens: List[str]):
         try:
+            complete_name: str = self._get_variable_name_for_assignment(node.target)
             info: TypeInfo = TypeInfo(annotation_node=node.annotation)
             self._type_cache.populate_type_info_with_module(info)
-            complete_name: str = ""
-
-            if isinstance(node.target, Attribute):
-                prefix = node.target.value.id
-                name = node.target.attr
-                complete_name = "{}.{}".format(prefix, name)
-            elif isinstance(node.target, Name):
-                complete_name = node.target.id
-            else:
-                logger.error("Could not retrieve variable name from AnnAssign")
-            
             self._classify_and_process_node(node.value, tokens)
             self._variable_cache.add_variable(complete_name, info)
 
