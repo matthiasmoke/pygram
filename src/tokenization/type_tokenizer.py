@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import arg, arguments ,Constant, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef, Index
+from _ast import arg, arguments ,Constant, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef
 import _ast
 from typing import List, Tuple
 
@@ -202,8 +202,8 @@ class TypeTokenizer(Tokenizer):
         """
         index = None
         try:
-            if isinstance(node.slice, Index):
-                index_str = node.slice.value.value
+            if isinstance(node.slice, Constant):
+                index_str = node.slice.value
                 index = int(index_str)
         except ValueError:
             return 1
@@ -217,12 +217,10 @@ class TypeTokenizer(Tokenizer):
     def _process_for_block(self, node: For, tokens: List[str]):
         tokens.append(Tokens.FOR.value)
 
-        if isinstance(node.iter, Name) or isinstance(node.iter, Subscript):
+        if isinstance(node.iter, Name) or isinstance(node.iter, Subscript) or isinstance(node.iter, Attribute):
             self._cache_variables_in_for_block(node)
         elif isinstance(node.iter, Call):
             self._process_call(node.iter, tokens)
-        elif isinstance(node.iter, Attribute):
-            pass
         else:
             logger.error("Error, unknown iter type of For node in module {}".format(self.module_path))
         
@@ -239,6 +237,8 @@ class TypeTokenizer(Tokenizer):
         for_target_names: List[str] = []
         if isinstance(node.target, Name):
             for_target_names.append(node.target.id)
+        elif isinstance(node.target, Attribute):
+            for_target_names.append(Utils.get_full_name_from_attribute_node(node.target))
         elif isinstance(node.target, _ast.Tuple):
             for child in node.target.elts:
                 for_target_names.append(child.id)

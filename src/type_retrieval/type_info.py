@@ -104,7 +104,7 @@ class TypeInfo:
         return "{}.{}".format(prefix, name)
     
     def _get_type_from_subscript(self, node: Subscript) -> List["TypeInfo"]:
-        slice = node.slice.value
+        slice = node.slice
         contained_types: List[TypeInfo] = []
 
         if isinstance(slice, Name):
