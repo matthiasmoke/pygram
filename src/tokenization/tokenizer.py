@@ -1,7 +1,8 @@
 import logging
 import ast
 import os
-from _ast import Global, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break, Tuple
+from _ast import Match, Global, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
+import _ast
 from typing import List, Tuple
 
 from ..utils import Utils
@@ -86,53 +87,70 @@ class Tokenizer:
         if node is None:
             return
         logger.debug("Processing node {} in line {}".format(node, node.lineno))
-        if isinstance(node, If):
-            self._process_if_block(node, token_list)
-        elif isinstance(node, For):
-            self._process_for_block(node, token_list)
-        elif isinstance(node, While):
-            self._process_while_block(node, token_list)
-        elif isinstance(node, Try):
-            self._process_try_block(node, token_list)
-        elif isinstance(node, Raise):
-            self._process_raise(node, token_list)
-        elif (isinstance(node, With)):
-            self._process_with_block(node, token_list)
-        elif isinstance(node, Assert):
-            self._process_assert(node, token_list)
-        elif (isinstance(node, Assign) or isinstance(node, AugAssign)):
-            self._process_assign(node, token_list)
-        elif isinstance(node, Await):
-            self._process_await(node, token_list)
-        elif isinstance(node, Expr):
-            self._process_expression(node, token_list)
-        elif isinstance(node, Call):
-            self._process_call(node, token_list)
-        elif isinstance(node, Tuple):
-            self._process_tuple(node, token_list)
-        elif isinstance(node, Return):
-            self._process_retrun(node, token_list)
-        elif isinstance(node, Yield):
-            self._process_yield(node, token_list)
-        elif isinstance(node, Compare):
-            self._process_compare(node, token_list)
-        elif isinstance(node, Pass):
-            self._add_token(token_list, Tokens.PASS.value, node)
-        elif isinstance(node, Break):
-            self._add_token(token_list, Tokens.BREAK.value, node)
-        elif isinstance(node, Continue):
-            self._add_token(token_list, Tokens.CONTINUE.value, node)
-        elif isinstance(node, Global):
-            self._add_token(token_list, Tokens.GLOBAL.value, node)
-        elif isinstance(node, Delete):
-            self._add_token(token_list, Tokens.DEL.value, node)
-        elif isinstance(node, AnnAssign):
-            # The type annotation node is included here, so the whole method 
-            # does not need an override in the typed tokenizer
-            self._process_ann_assign(node, token_list)
-        elif isinstance(node, ImportFrom) or isinstance(node, Import):
-            self._process_import(node)
+        match node:
+            case If():
+                self._process_if_block(node, token_list)
+            case For():
+                self._process_for_block(node, token_list)
+            case While():
+                self._process_while_block(node, token_list)
+            case Match():
+                self._process_match(node, token_list)
+            case Try():
+                self._process_try_block(node, token_list)
+            case Raise():
+                self._process_raise(node, token_list)
+            case With():
+                self._process_with_block(node, token_list)
+            case Assert():
+                self._process_assert(node, token_list)
+            case Assign():
+                self._process_assign(node, token_list)
+            case AugAssign():
+                self._process_assign(node, token_list)
+            case Await():
+                self._process_await(node, token_list)
+            case Expr():
+                self._process_expression(node, token_list)
+            case Call():
+                self._process_call(node, token_list)
+            case _ast.Tuple():
+                self._process_tuple(node, token_list)
+            case Return():
+                self._process_retrun(node, token_list)
+            case Yield():
+                self._process_yield(node, token_list)
+            case Compare():
+                self._process_compare(node, token_list)
+            case Pass():
+                self._add_token(token_list, Tokens.PASS.value, node)
+            case Break():
+                self._add_token(token_list, Tokens.BREAK.value, node)
+            case Continue():
+                self._add_token(token_list, Tokens.CONTINUE.value, node)
+            case Global():
+                self._add_token(token_list, Tokens.GLOBAL.value, node)
+            case Delete():
+                self._add_token(token_list, Tokens.DEL.value, node)
+            case AnnAssign():
+                # The type annotation node is included here, so the whole method 
+                # does not need an override in the typed tokenizer
+                self._process_ann_assign(node, token_list)
+            case ImportFrom():
+                self._process_import(node)
+            case Import():
+                self._process_import(node)
     
+    def _process_match(self, node: Match, tokens: List[Tuple[str, int]]):
+        self._add_token(tokens, Tokens.MATCH.value, node)
+
+        for case in node.cases:
+            self._add_token(tokens, Tokens.CASE.value, node)
+            # TODO match_class node is not tokenised. Also would need type tokenisation implementation
+            self._search_node_body(case.body, tokens)
+            self._add_token(tokens, Tokens.END_CASE.value, node)
+        self._add_token(tokens, Tokens.END_MATCH.value, node)
+
     def _process_test_expression(self, test_node, tokens: List[Tuple[str, int]]):
         if test_node is not None:
             if isinstance(test_node, BoolOp):
