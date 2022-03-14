@@ -25,7 +25,7 @@ class TypePreprocessor():
         return self._type_cache
         
     def _process_file(self, path: str) -> FileCache:
-        logger.debug("Preprocessing {}".format(path))
+        print("Preprocessing {}".format(path))
         syntax_tree = Utils.load_syntax_tree(path, True)
         file_cache: FileCache = None
         if syntax_tree is not None:
