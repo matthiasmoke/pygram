@@ -22,7 +22,7 @@ class NGramModel():
         """
         split_sequences: List = self._split_sequences()
         for sequence in split_sequences:
-            sequence_string: str = Utils.get_sequence_string(sequence)
+            sequence_string: str = self._get_sequence_string(sequence)
             if sequence_string not in self.model:
                 probability: Decimal = self._calculate_sequence_probability(sequence)
                 self.model[sequence_string] = probability
@@ -32,7 +32,7 @@ class NGramModel():
         Splits sequences which are longer than the max. sequence length into smaller sequences.
         Either by using a sliding window or hard splitting them according to the configuration
         """
-        sequences: List[List[str]] = self.token_count_model.get_sequence_list_without_module_info()
+        sequences: List[List[str]] = self.token_count_model.get_sequence_list_without_meta_data()
         max: int = self.max_sequence_length
         split_sequences: List[List[str]] = []
 
@@ -65,7 +65,7 @@ class NGramModel():
         return relative_frequency
     
     def _calculate_single_probability(self, token: str) -> Decimal:
-        all_token_count: int = self.token_count_model.get_number_single_tokens()
+        all_token_count: int = self.token_count_model.get_number_of_single_tokens()
         token_count: int = self.token_count_model.get_token_count(token)
         probability: Decimal = Decimal(str(token_count/all_token_count)).quantize(Decimal('1e-4'))
         return probability
@@ -105,6 +105,12 @@ class NGramModel():
                 current_prefix += current_token
         
         return probability
+    
+    def _get_sequence_string(self, sequence: List[str]) -> str:
+        output: str = ""
+        for token in sequence:
+            output += token
+        return output
                 
         
 

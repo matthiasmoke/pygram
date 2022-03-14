@@ -1,8 +1,21 @@
 import os
 from typing import List
 import ast
+import builtins
+import types
+from _ast import Attribute, Name
 
 class Utils:
+
+    def __init__(self) -> None:
+        self.builtin_functions: List[str] = []
+    
+
+    def is_not_a_builtin_function(self, name: str) -> bool:
+        if len(self.builtin_functions) == 0:
+            self.builtin_functions = [name for name, obj in vars(builtins).items() 
+                          if isinstance(obj, types.BuiltinFunctionType)]
+        return name not in self.builtin_functions
 
     @staticmethod
     def get_all_python_files_in_directory(path) -> List[str]:
@@ -60,18 +73,14 @@ class Utils:
 
     
     @staticmethod
-    def get_sequence_string(sequence: List[str]) -> str:
-        output: str = ""
-        for token in sequence:
-            output += token
-        return output
-    
-    @staticmethod
     def get_list_string(list: List[str]) -> str:
         output = "["
 
         for i in range(0, len(list)):
-            output += list[i]
+            value = list[i]
+            if isinstance(value, int):
+                value = str(value)
+            output += value
 
             if i < len(list) - 1:
                 output += ", "
@@ -91,4 +100,23 @@ class Utils:
             else:
                 output += item
         return output
+    
+    @staticmethod
+    def get_full_name_from_attribute_node(node: Attribute) -> str:
+        """
+        Constructs the complete variable or function path from an attribute node.
+        Is used for nested calls, e.g. for cases like os.path.abspath or self.SomeInnerClass
+        """
+        
+        name: str = node.attr
+        prefix: str = ""
+        if isinstance(node.value, Name):
+            prefix = node.value.id
+        elif isinstance(node.value, Attribute):
+            prefix = Utils.get_full_name_from_attribute_node(node.value)
+        
+        if prefix == "":
+            return name
+        else:
+            return "{}.{}".format(prefix, name)
 

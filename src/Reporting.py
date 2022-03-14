@@ -22,11 +22,11 @@ class ReportingService():
             output += entry[0]
             output += "\n"
             output += "\tProbability: {}\n".format(entry[1])
-            output += "\tModules: {}\n".format(Utils.get_list_string(entry[2]))
+            output += "\tModules:\n"
+            for key, starting_lines in entry[2].items():
+                output += "\t\t{} in line(s): {}\n".format(key, Utils.get_list_string(starting_lines))
             output += "-------------------------------------------------------\n"
         return output
-
-    
 
     def generate_report(self) -> List[Tuple[str, Decimal, List[str]]]:
         report = []
@@ -41,16 +41,19 @@ class ReportingService():
         return report
 
     
-    def _get_corresponding_modules(self, sub_sequence: str) -> List[str]:
+    def _get_corresponding_modules(self, sub_sequence: str) -> List[Tuple[str, int, int]]:
         """
-        Returns the modules in which a sequence occurs
+        Returns the modules in which a sequence occurs including occurrences and string line number.
+        The format is module: [line number]
         """
-        output = []
+        output: Dict[str, List[str]] = {}
         for key in self.token_sequences:
             for sequence in self.token_sequences[key]:
-
-                if sub_sequence in sequence:
-                    output.append(key)
+                if sub_sequence in sequence[0]:
+                    if output.get(key, None) is None:
+                        output[key] = [sequence[1]]
+                    else:
+                        output[key].append(sequence[1])
         return output
 
     def _extract_sequences_with_lowest_probability(self) -> List[Tuple[str, Decimal]]:
@@ -71,14 +74,22 @@ class ReportingService():
     def _convert_token_sequences(self, token_sequences: Dict) -> Dict:
         """
         Converts a Dict which contains the sequences as List of tokens to a Dict
-        which contains the sequences as strings
+        which contains tuples with the sequences as strings and the starting line number
         """
-        output: Dict = {}
+        output: Dict[str, List[Tuple[str, int]]] = {}
 
         for key in token_sequences:
             output[key] = []
 
             for sequence in token_sequences[key]:
-                output[key].append(Utils.get_sequence_string(sequence))
+                sequence_string = self._get_sequence_string(sequence)
+                starting_line_number = sequence[0][1]
+                output[key].append((sequence_string, starting_line_number))
 
+        return output
+    
+    def _get_sequence_string(self, sequence: List[Tuple[str, int]]) -> str:
+        output: str = ""
+        for token in sequence:
+            output += token[0]
         return output
