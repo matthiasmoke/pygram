@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import Match, Global, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
+from _ast import Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
 import _ast
 from typing import List, Tuple
 
@@ -130,8 +130,13 @@ class Tokenizer:
                 self._add_token(token_list, Tokens.CONTINUE.value, node)
             case Global():
                 self._add_token(token_list, Tokens.GLOBAL.value, node)
+            case Nonlocal():
+                self._add_token(token_list, Tokens.NONLOCAL.value, node)
             case Delete():
                 self._add_token(token_list, Tokens.DEL.value, node)
+            case FunctionDef():
+                tokens: List[Tuple[str, int]] = self._process_function_def(node)
+                token_list += tokens
             case AnnAssign():
                 # The type annotation node is included here, so the whole method 
                 # does not need an override in the typed tokenizer
@@ -146,7 +151,6 @@ class Tokenizer:
 
         for case in node.cases:
             self._add_token(tokens, Tokens.CASE.value, node)
-            # TODO match_class node is not tokenised. Also would need type tokenisation implementation
             self._search_node_body(case.body, tokens)
             self._add_token(tokens, Tokens.END_CASE.value, node)
         self._add_token(tokens, Tokens.END_MATCH.value, node)

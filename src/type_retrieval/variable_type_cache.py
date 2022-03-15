@@ -17,14 +17,15 @@ class VariableTypeCache:
     def __init__(self, module_path: str, project_type_cache: TypeCache) -> None:
         self.module_path: str = module_path
         self._project_type_cache: TypeCache = project_type_cache
-        self.function_scope_name = ""
 
         self.scope_stack: List[Scope] = []
         self.class_scope_stack: List[str] = []
+        self.function_scope_stack: List[str] = []
 
         self.module_variables: Dict[str, TypeInfo] = {}
         self.class_scopes: Dict[str, Dict[str, TypeInfo]] = {}
-        self.function_variables: Dict[str, TypeInfo] = {}
+        self.function_scopes: Dict[str, Dict[str, TypeInfo]] = {}
+
     
     def set_class_scope(self, name: str) -> None:
         self.scope_stack.append(Scope.CLASS)
@@ -43,12 +44,14 @@ class VariableTypeCache:
         self.scope_stack.pop()
     
     def set_function_scope(self, name: str):
-        self.function_scope_name = name
         self.scope_stack.append(Scope.FUNCTION)
+        self.function_scope_stack.append(name)
+        self.function_scopes[name] = {}
 
     def leave_function_scope(self):
-        self.function_scope_name = ""
-        self.function_variables.clear()
+        left_function_scope = self.function_scope_stack[-1]
+        del self.function_scopes[left_function_scope]
+        self.function_scope_stack.pop()
         self.scope_stack.pop()
 
     def add_variable(self, variable_name: str, variable_type: TypeInfo):
@@ -58,18 +61,17 @@ class VariableTypeCache:
         elif scope == Scope.CLASS:
             self._set_class_variable(variable_name, variable_type)
         else:
-            if self.function_scope_name == "__init__" and self._get_previous_scope() == Scope.CLASS:
+            if self.function_scope_stack[-1] == "__init__" and self._get_previous_scope() == Scope.CLASS:
                 self._set_class_variable(variable_name, variable_type)
             else:
-                self.function_variables[variable_name] = variable_type
-
+                self._set_function_variable(variable_name, variable_type)
 
     def get_variable_type(self, variable_name: str, depth: int, subscript_index: int) -> TypeInfo:
         scope: Scope = self._get_current_scope()
         previous_scope: Scope = self._get_previous_scope()
         variable_type: TypeInfo = None
         if scope == Scope.FUNCTION:
-            variable_type = self.function_variables.get(variable_name, None)
+            variable_type = self._get_function_variable(variable_name)
         
         if previous_scope == Scope.CLASS and variable_type is None:
             variable_type = self._get_class_variable(variable_name)
@@ -116,3 +118,14 @@ class VariableTypeCache:
     def _get_class_variable(self, variable_name: str) -> TypeInfo:
         current_class = self.class_scope_stack[-1]
         return self.class_scopes[current_class].get(variable_name, None)
+    
+    def _get_function_variable(self, name: str) -> TypeInfo:
+        for scope in reversed(self.function_scope_stack):
+            variable = self.function_scopes[scope].get(name, None)
+            if variable is not None:
+                return variable
+        return None
+
+    def _set_function_variable(self, variable_name: str, variable_type: TypeInfo) -> None:
+        current_function = self.function_scope_stack[-1]
+        self.function_scopes[current_function][variable_name] = variable_type

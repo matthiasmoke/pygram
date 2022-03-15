@@ -32,6 +32,7 @@ class Tokens(Enum):
     CONTINUE = "<CONTINUE>"
     YIELD = "<YIELD>"
     GLOBAL = "<GLOBAL>"
+    NONLOCAL = "<NONLOCAL>"
     DEL = "<DEL>"
 
 
