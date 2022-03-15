@@ -19,7 +19,7 @@ class Pygram:
         self.gram_size: int = 3
         self.sequence_length: int = 6
         self.split_sequences: bool = False
-        self.minimum_token_count: int = 2
+        self.minimum_token_count: int = 4
         self.reporting_size: int = 10
         self.count_model_path: os.path = None
         self.token_count_model: TokenCountModel = None
@@ -120,7 +120,13 @@ class Pygram:
         
         if self.token_count_model is not None:
             print("Building n-gram model...")
-            ngram_model: NGramModel = NGramModel(self.token_count_model, self.gram_size, self.sequence_length, self.split_sequences)
+            ngram_model: NGramModel = NGramModel(
+                self.token_count_model,
+                self.gram_size,
+                self.sequence_length,
+                self.minimum_token_count,
+                self.split_sequences
+            )
             ngram_model.build()
             print("Finished")
             print("Generating Report...")

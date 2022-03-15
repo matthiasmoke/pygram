@@ -7,11 +7,12 @@ from .TokenCountModel import TokenCountModel
 class NGramModel():
 
     def __init__(self, token_count_model: TokenCountModel,
-                 gram_size: int, max_sequence_length: int, split_sequences: bool
+                 gram_size: int, max_sequence_length: int, minimum_token_occurrence: int, split_sequences: bool
                  ) -> None:
         self.token_count_model: TokenCountModel = token_count_model
         self.gram_size: int = gram_size
         self.max_sequence_length: int = max_sequence_length
+        self.minimum_token_occurrence: int = minimum_token_occurrence
         self.split_sequences: int = split_sequences
         self.model: Dict = {}
     
@@ -22,10 +23,23 @@ class NGramModel():
         """
         split_sequences: List = self._split_sequences()
         for sequence in split_sequences:
+            if self._sequence_contains_invalid_token(sequence):
+                continue
+
             sequence_string: str = self._get_sequence_string(sequence)
             if sequence_string not in self.model:
                 probability: Decimal = self._calculate_sequence_probability(sequence)
                 self.model[sequence_string] = probability
+    
+    def _sequence_contains_invalid_token(self, sequence: List[str]) -> bool:
+        """
+        Checks if sequence contains a token that does not fulfill the minimum token occurrence
+        """
+        for token in sequence:
+            token_count: int = self.token_count_model.get_token_count(token)
+            if token_count < self.minimum_token_occurrence:
+                return True
+        return False
 
     def _split_sequences(self) -> List:
         """
@@ -65,7 +79,7 @@ class NGramModel():
         return relative_frequency
     
     def _calculate_single_probability(self, token: str) -> Decimal:
-        all_token_count: int = self.token_count_model.get_number_of_single_tokens()
+        all_token_count: int = self.token_count_model.get_number_of_single_tokens(self.minimum_token_occurrence)
         token_count: int = self.token_count_model.get_token_count(token)
         probability: Decimal = Decimal(str(token_count/all_token_count)).quantize(Decimal('1e-4'))
         return probability

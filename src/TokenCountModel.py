@@ -4,13 +4,14 @@ from typing import Dict, List, Tuple
 
 class TokenCountModel():
     
-    def __init__(self, token_sequences={}, name="", count_model={}, shortest_sequence_length=0, longest_sequence_length=0, number_single_tokens=0):
+    def __init__(self, token_sequences={}, name="", count_model={}, single_tokens={}, shortest_sequence_length=0, longest_sequence_length=0):
         self.token_sequences: Dict = token_sequences
         self.count_model: Dict = count_model
+        self.single_tokens: Dict[str, int] = single_tokens
         self.name: str = name
         self.shortest_sequence_length: int = shortest_sequence_length
         self.longest_sequence_length: int = longest_sequence_length
-        self.number_of_single_tokens: int = number_single_tokens
+        self.number_of_single_tokens_cache: int = None
 
     @staticmethod
     def load_from_file(path) -> "TokenCountModel":
@@ -19,7 +20,7 @@ class TokenCountModel():
             if model is not None:
                 if "count_model" in model and "project" in model and "token_sequences" in model:
                     token_sequences: Dict = model["token_sequences"]
-                    converted_token_sequences: Dict[List[Tuple[str, int]]] = {}
+                    converted_token_sequences: Dict[str, List[Tuple[str, int]]] = {}
 
                     for key, sequences in token_sequences.items():
                         converted_token_sequences[key] = []
@@ -36,7 +37,7 @@ class TokenCountModel():
                         count_model=model["count_model"],
                         shortest_sequence_length=model["shortest_sequence_length"],
                         longest_sequence_length=model["longest_sequence_length"],
-                        number_single_tokens=model["number_single_tokens"]
+                        single_tokens=model["single_tokens"]
                         )
         return None
     
@@ -47,7 +48,7 @@ class TokenCountModel():
             "project": self.name,
             "shortest_sequence_length": self.shortest_sequence_length,
             "longest_sequence_length": self.longest_sequence_length,
-            "number_single_tokens": self.number_of_single_tokens,
+            "single_tokens": self.single_tokens,
             "token_sequences": self.token_sequences,
             "count_model": self.count_model
             }, outfile)
@@ -98,8 +99,17 @@ class TokenCountModel():
         """
         return self.count_model[token]
     
-    def get_number_of_single_tokens(self):
-        return self.number_of_single_tokens
+    def get_number_of_single_tokens(self, minimum_token_count: int):
+        if self.number_of_single_tokens_cache is not None:
+            return self.number_of_single_tokens_cache
+        
+        number_of_single_tokens: int = 0
+        for token, count in self.single_tokens.items():
+            if count >= minimum_token_count:
+                number_of_single_tokens += count
+        
+        self.number_of_single_tokens_cache = number_of_single_tokens
+        return number_of_single_tokens
 
     def _count_token(self, token_sub_sequence) -> None:
         if token_sub_sequence in self.count_model:
@@ -112,8 +122,11 @@ class TokenCountModel():
             self.count_model[token] += 1
         else:
             self.count_model[token] = 1
-        
-        self.number_of_single_tokens += 1
+
+        if token in self.single_tokens:
+            self.single_tokens[token] += 1
+        else:
+            self.single_tokens[token] = 1 
     
     def _update_sequence_metrics(self, sequence) -> None:
         sequence_length: int = len(sequence)
