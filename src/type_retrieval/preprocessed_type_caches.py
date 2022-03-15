@@ -68,7 +68,7 @@ class TypeCache:
             .format(function_name, self._current_import_cache.get_module()))
         elif len(potential_modules) == 0:
             if utils.is_not_a_builtin_function(function_name):
-                logger.error("Could not find matching modules for funcion {} in {}"
+                logger.warning("Could not find matching modules for funcion {} in {}"
                 .format(function_name, self._current_import_cache.get_module()))
 
         return module_path
@@ -129,7 +129,7 @@ class TypeCache:
                 .format(type_name, self._current_import_cache.get_module()))
             elif len(potential_modules) == 0:
                 if type_name != "str" and type_name != "bool" and type_name != "int":
-                    logger.error("Could not find matching modules for type {} in {}"
+                    logger.warning("Could not find matching modules for type {} in {}"
                     .format(type_name, self._current_import_cache.get_module()))
             type_info.set_fully_qualified_name("{}{}".format(module_path, type_name))
         else:

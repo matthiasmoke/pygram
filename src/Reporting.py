@@ -18,6 +18,12 @@ class ReportingService():
             return "Report is empty"
         
         output = "-------------------- Pygram Report --------------------\n"
+        output += "Gram Size: {}, Sequence Length: {}, Minimum Token Occurrence: {}\n".format(
+            self.language_model.gram_size,
+            self.language_model.max_sequence_length,
+            self.language_model.minimum_token_occurrence
+            )
+        output += "-------------------------------------------------------\n\n"
         for entry in self.report:
             output += entry[0]
             output += "\n"
@@ -25,7 +31,7 @@ class ReportingService():
             output += "\tModules:\n"
             for key, starting_lines in entry[2].items():
                 output += "\t\t{} in line(s): {}\n".format(key, Utils.get_list_string(starting_lines))
-            output += "-------------------------------------------------------\n"
+            output += "\n-------------------------------------------------------\n\n"
         return output
 
     def generate_report(self) -> List[Tuple[str, Decimal, List[str]]]:
