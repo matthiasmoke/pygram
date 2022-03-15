@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
+from _ast import YieldFrom, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
 import _ast
 from typing import List, Tuple
 
@@ -134,6 +134,8 @@ class Tokenizer:
                 self._add_token(token_list, Tokens.NONLOCAL.value, node)
             case Delete():
                 self._add_token(token_list, Tokens.DEL.value, node)
+            case YieldFrom():
+                self._add_token(token_list, Tokens.YIELD_FROM.value, node)
             case FunctionDef():
                 tokens: List[Tuple[str, int]] = self._process_function_def(node)
                 token_list += tokens

@@ -31,6 +31,7 @@ class Tokens(Enum):
     BREAK = "<BREAK>"
     CONTINUE = "<CONTINUE>"
     YIELD = "<YIELD>"
+    YIELD_FROM = "<YIELD_FROM>"
     GLOBAL = "<GLOBAL>"
     NONLOCAL = "<NONLOCAL>"
     DEL = "<DEL>"
