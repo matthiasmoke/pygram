@@ -19,7 +19,7 @@ class Pygram:
         self.gram_size: int = 3
         self.sequence_length: int = 6
         self.split_sequences: bool = False
-        self.minimum_token_count: int = 4
+        self.minimum_token_count: int = 2
         self.reporting_size: int = 10
         self.count_model_path: os.path = None
         self.token_count_model: TokenCountModel = None

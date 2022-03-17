@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import YieldFrom, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
+from _ast import YieldFrom, UnaryOp, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
 import _ast
 from typing import List, Tuple
 
@@ -161,6 +161,8 @@ class Tokenizer:
         if test_node is not None:
             if isinstance(test_node, BoolOp):
                 self._process_bool_op(test_node, tokens)
+            elif isinstance(test_node, UnaryOp):
+                self._classify_and_process_node(test_node.operand, tokens)
             else:
                 self._classify_and_process_node(test_node, tokens)
 
