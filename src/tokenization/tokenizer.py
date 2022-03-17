@@ -221,17 +221,21 @@ class Tokenizer:
             self._search_node_body(handler.body, tokens)
             self._add_token(tokens, Tokens.END_EXCEPT.value, node)
         
+        if len(node.orelse):
+            self._add_token(tokens, Tokens.ELSE.value, node.orelse)
+            self._search_node_body(node.orelse, tokens)
+        
         if len(node.finalbody):
-            self._add_token(tokens, Tokens.FINALLY.value, node)
+            self._add_token(tokens, Tokens.FINALLY.value, node.finalbody)
             self._search_node_body(node.finalbody, tokens)
-            self._add_token(tokens, Tokens.END_FINALLY.value, node)
+            self._add_token(tokens, Tokens.END_FINALLY.value, node.finalbody)
     
     def _process_with_block(self, node: With, tokens: List[Tuple[str, int]]):
             self._add_token(tokens, Tokens.WITH.value, node)
             if len(node.items):
                 for item in node.items:
-                    if isinstance(item, withitem) and isinstance(item.context_expr, Call):
-                        self._process_call(item.context_expr, tokens)
+                    if isinstance(item, withitem):
+                        self._classify_and_process_node(item.context_expr, tokens)
             self._search_node_body(node.body, tokens)
             self._add_token(tokens, Tokens.END_WITH.value, node)
     
