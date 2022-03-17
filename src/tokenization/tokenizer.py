@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import YieldFrom, UnaryOp, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
+from _ast import YieldFrom, UnaryOp, BinOp, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
 import _ast
 from typing import List, Tuple
 
@@ -122,6 +122,8 @@ class Tokenizer:
                 self._process_yield(node, token_list)
             case Compare():
                 self._process_compare(node, token_list)
+            case BinOp():
+                self._process_bin_op(node, token_list)
             case Pass():
                 self._add_token(token_list, Tokens.PASS.value, node)
             case Break():
@@ -147,6 +149,10 @@ class Tokenizer:
                 self._process_import(node)
             case Import():
                 self._process_import(node)
+    
+    def _process_bin_op(self, node: BinOp, tokens: List[Tuple[str, int]]):
+        self._classify_and_process_node(node.left, tokens)
+        self._classify_and_process_node(node.right, tokens)
     
     def _process_match(self, node: Match, tokens: List[Tuple[str, int]]):
         self._add_token(tokens, Tokens.MATCH.value, node)
@@ -329,8 +335,7 @@ class Tokenizer:
             self._add_token(tokens, Tokens.END_FOR.value, node)
     
     def _process_ann_assign(self, node: ast.AnnAssign, tokens: List[Tuple[str, int]]):
-        if isinstance(node.value, Call):
-            self._process_call(node.value, tokens)
+        self._classify_and_process_node(node.value, tokens)
 
     def _process_import(self, node):
         pass
