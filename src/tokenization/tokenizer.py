@@ -65,7 +65,7 @@ class Tokenizer:
                     self.sequence_stream.append(result)
 
                 elif isinstance(node, ClassDef):
-                    result = self._process_class_def(node)
+                    result = self._process_class_def(node, module_tokens)
 
                     if len(result):
                         self.sequence_stream += result
@@ -258,7 +258,11 @@ class Tokenizer:
 
     #### Functions to override in typed tokenization
 
-    def _process_class_def(self, node: ClassDef) -> List[Tuple[str, int]]:
+    def _process_class_def(self, node: ClassDef, module_tokens: List[Tuple[str, int]]) -> List[Tuple[str, int]]:
+        """
+        Creates sequences for every function definition inside a class definition. 
+        Nodes which are not contained inside a function def are added to the module sequence
+        """
         class_tokens = []
 
         for child in node.body:
@@ -266,10 +270,10 @@ class Tokenizer:
                 result = self._process_function_def(child)
                 class_tokens.append(result)
             elif isinstance(child, ClassDef):
-                result = self._process_class_def(child)
+                result = self._process_class_def(child, module_tokens)
                 class_tokens += result
             else:
-                self._classify_and_process_node(child, class_tokens)
+                self._classify_and_process_node(child, module_tokens)
 
         return class_tokens
     

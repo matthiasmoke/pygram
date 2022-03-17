@@ -36,7 +36,12 @@ class TypeTokenizer(Tokenizer):
     def _process_import(self, node):
         self._import_cache.add_import(node)
 
-    def _process_class_def(self, node: ClassDef) -> List[Tuple[str, int]]:
+    def _process_class_def(self, node: ClassDef, module_tokens: List[Tuple[str, int]]) -> List[Tuple[str, int]]:
+        """
+        Creates sequences for every function definition inside a class definition. 
+        Nodes which are not contained inside a function def are added to the module sequence.
+        Changes the current variable cache scope to the currently processed class
+        """
         class_tokens = []
         self._variable_cache.set_class_scope(node.name)
         for child in node.body:
@@ -44,10 +49,10 @@ class TypeTokenizer(Tokenizer):
                 result = self._process_function_def(child)
                 class_tokens.append(result)
             elif isinstance(child, ClassDef):
-                result = self._process_class_def(child)
+                result = self._process_class_def(child, module_tokens)
                 class_tokens += result
             else:
-                self._classify_and_process_node(child, class_tokens)
+                self._classify_and_process_node(child, module_tokens)
         self._variable_cache.leave_class_scope()
         return class_tokens
     
