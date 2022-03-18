@@ -230,8 +230,7 @@ class TypeTokenizer(Tokenizer):
         elif isinstance(node.target, Attribute):
             for_target_names.append(Utils.get_full_name_from_attribute_node(node.target))
         elif isinstance(node.target, _ast.Tuple):
-            for child in node.target.elts:
-                for_target_names.append(child.id)
+            Utils.get_names_from_tuple(node.target, for_target_names)
         else:
             logger.warning("Unprocessable For loop target in line {}".format(node.lineno))
 
