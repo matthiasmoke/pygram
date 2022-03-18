@@ -1,7 +1,7 @@
 import logging
 import ast
 import os
-from _ast import YieldFrom, UnaryOp, BinOp, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
+from _ast import Subscript, YieldFrom, UnaryOp, BinOp, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
 import _ast
 from typing import List, Tuple
 
@@ -313,9 +313,13 @@ class Tokenizer:
             token = self._construct_call_token(function_name)
             if isinstance(attribute.value, Call):
                 self._process_call(attribute.value, tokens)
-
+        elif isinstance(node.func, Subscript):
+            function_name = node.func.value.id
+            token = self._construct_call_token(function_name)
+        elif isinstance(node.func, Call):
+            self._process_call(node.func, tokens)
         else:
-            logger.error("Unable to determine method name in module {}".format(self.module_path))
+            logger.error("Unable to determine method name in module {}, line {}".format(self.module_path, node.lineno))
         
         self._add_token(tokens, token, node)
     
@@ -323,7 +327,9 @@ class Tokenizer:
         return "{}()".format(function_name)
     
     def _add_token(self, list: List[Tuple[str, int]], token: str, node) -> None:
-        line_no = node.lineno
+        line_no: int = 0
+        if hasattr(node, "lineno"):
+            line_no = int(node.lineno)
         list.append((token, line_no))
     
     def _process_tuple(self, node: Tuple, tokens: List[Tuple[str, int]]):
