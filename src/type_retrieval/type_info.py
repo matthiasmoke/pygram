@@ -88,7 +88,7 @@ class TypeInfo:
         elif isinstance(node, Constant):
             self._label = node.value
         elif isinstance(node, Subscript):
-            self._label = node.value.id
+            self._label = Utils.get_name_from_subscript(node)
             contained = self._get_type_from_subscript(node)
             self.set_contained_types(contained)
         elif isinstance(node, Attribute):
@@ -102,7 +102,8 @@ class TypeInfo:
         if isinstance(slice, Name):
             contained_types.append(TypeInfo(label=slice.id))
         elif isinstance(slice, Subscript):
-            contained_type: TypeInfo = TypeInfo(label=slice.value.id)
+            label: str = Utils.get_name_from_subscript(slice)
+            contained_type: TypeInfo = TypeInfo(label=label)
             result = self._get_type_from_subscript(slice)
             contained_type.set_contained_types(result)
             contained_types.append(contained_type)
@@ -120,7 +121,8 @@ class TypeInfo:
             if isinstance(type_node, Name):
                 types.append(TypeInfo(label=type_node.id))
             if isinstance(type_node, Subscript):
-                contained_type: TypeInfo = TypeInfo(label=type_node.value.id)
+                label = Utils.get_name_from_subscript(type_node)
+                contained_type: TypeInfo = TypeInfo(label=label)
                 sub_types: List[TypeInfo] = self._get_type_from_subscript(type_node)
                 contained_type.set_contained_types(sub_types)
                 types.append(contained_type)
