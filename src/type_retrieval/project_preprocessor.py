@@ -34,6 +34,10 @@ class TypePreprocessor():
             self._search_ast(syntax_tree, file_cache)
             path_within_project: str = Utils.get_only_project_path(self._projectpath, path)
             dotted_module_path: str = Utils.generate_dotted_module_path(path_within_project)
+
+            if file_name == "__init__.py":
+                dotted_module_path = dotted_module_path.rsplit(".", 1)[0]
+
             self._type_cache.add_file_cache(dotted_module_path, file_cache)
         else:
             logger.error("Could not preprocess file {}".format(path))
