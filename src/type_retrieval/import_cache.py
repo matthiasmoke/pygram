@@ -61,7 +61,10 @@ class ImportCache():
             if name.asname is not None and name.asname != "None":
                 self._as_imports[name.asname] = name.name
         
-        self._imports[complete_path] = classes
+        if self._imports.get(complete_path, None) is None:
+            self._imports[complete_path] = classes
+        else:
+            self._imports[complete_path] += classes
 
     def _process_import(self, node: Import):
         for module in node.names:
