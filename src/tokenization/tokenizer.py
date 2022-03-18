@@ -14,9 +14,9 @@ logger = logging.getLogger("main")
 
 class Tokenizer:
 
-    def __init__(self, filepath, module_name) -> None:
+    def __init__(self, filepath, module_path) -> None:
         self._filepath: str = filepath
-        self.module_path: str = Utils.generate_dotted_module_path(filepath, module_name)
+        self.module_path: str = module_path
         self._syntax_tree = None
         self.sequence_stream: List[List[Tuple[str, int]]] = []
 

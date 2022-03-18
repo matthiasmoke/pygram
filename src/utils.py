@@ -67,32 +67,29 @@ class Utils:
         return None
     
     @staticmethod
-    def get_sub_path(starting_dir: str, path: str) -> str:
-        parts: List = path.split(starting_dir)
-        output: str = ""
-
-        if len(parts) > 1:
-            output += starting_dir
-            output += parts[1]
-
-            for index in range(2, len(parts) - 1):
-                output += parts[index]
-        return output
-    
-    @staticmethod
     def get_last_element_of_path(path: str) -> str:
         return os.path.basename(os.path.normpath(path))
     
     @staticmethod
-    def generate_dotted_module_path(path: str, project_name: str) -> str:
+    def get_only_project_path(path_to_project: str, complete_path: str) -> str:
+        """
+        Returns a path with its root being the currently analysed project.
+        (Removes its absolute location, like /home/user/...)
+        """
+        path_to_remove = os.path.split(path_to_project)[0] + "/"
+        result: str = complete_path.replace(path_to_remove, "")
+        return result
+    
+    @staticmethod
+    def generate_dotted_module_path(path: str) -> str:
         """
         Creates dotted module path from regular file path
         """
-        project_only_path: str = Utils.get_sub_path(project_name, path)
         # cut ending of python file
-        project_only_path = project_only_path[0:(len(project_only_path) - 3)]
-        project_only_path = project_only_path.replace("/", ".")
-        return project_only_path
+        path = path[0:(len(path) - 3)]
+        # replace slashes with dots 
+        path = path.replace("/", ".")
+        return path
 
     
     @staticmethod

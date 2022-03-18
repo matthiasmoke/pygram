@@ -19,7 +19,7 @@ class Pygram:
         self.gram_size: int = 3
         self.sequence_length: int = 6
         self.split_sequences: bool = False
-        self.minimum_token_count: int = 2
+        self.minimum_token_count: int = 3
         self.reporting_size: int = 10
         self.count_model_path: os.path = None
         self.token_count_model: TokenCountModel = None
@@ -95,14 +95,15 @@ class Pygram:
             path: os.path = os.path.abspath(file)
 
             if os.path.isfile(path):
-                module_name = Utils.get_sub_path(directory_name, file)
+                path_within_project: str = Utils.get_only_project_path(directory, path)
+                module_path: str = Utils.generate_dotted_module_path(path_within_project)
 
                 if (self.use_type_info):
-                    tokenizer: TypeTokenizer = TypeTokenizer(path, module_name, type_cache)
+                    tokenizer: TypeTokenizer = TypeTokenizer(path, module_path, type_cache)
                 else:
-                    tokenizer: Tokenizer = Tokenizer(path, module_name)
+                    tokenizer: Tokenizer = Tokenizer(path, module_path)
                 file_tokens: List[Tuple(str, int)] = tokenizer.process_file()
-                sequence_list[module_name] = file_tokens
+                sequence_list[path_within_project] = file_tokens
         return directory_name, sequence_list
     
     def _analyze_project(self):
