@@ -3,7 +3,9 @@ from typing import List
 import ast
 import builtins
 import types
-from _ast import Attribute, Name
+import string
+import random
+from _ast import Attribute, Name, Subscript, Tuple
 
 class Utils:
 
@@ -16,6 +18,27 @@ class Utils:
             self.builtin_functions = [name for name, obj in vars(builtins).items() 
                           if isinstance(obj, types.BuiltinFunctionType)]
         return name not in self.builtin_functions
+    
+
+    @staticmethod
+    def get_random_string(length: int) -> str:
+       return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(length))
+    
+    @staticmethod
+    def get_name_from_subscript(node: Subscript) -> str:
+        label: str = ""
+        if isinstance(node.value, Name):
+            label = node.value.id
+        elif isinstance(node.value, Attribute):
+            label = Utils.get_full_name_from_attribute_node(node.value)
+        return label
+    
+    def get_names_from_tuple(node: Tuple, names: List[str]) -> List[str]:
+        for child in node.elts:
+            if isinstance(child, Tuple):
+                Utils.get_names_from_tuple(child, names)
+            else:
+                names.append(child.id)
 
     @staticmethod
     def get_all_python_files_in_directory(path) -> List[str]:

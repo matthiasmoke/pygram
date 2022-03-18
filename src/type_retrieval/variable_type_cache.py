@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from .preprocessed_type_caches import TypeCache
 from .type_info import TypeInfo
+from ..utils import Utils
 
 logger = logging.getLogger("main")
 
@@ -45,6 +46,8 @@ class VariableTypeCache:
     
     def set_function_scope(self, name: str):
         self.scope_stack.append(Scope.FUNCTION)
+        if name in self.function_scope_stack:
+            name += "_{}".format(Utils.get_random_string(5))
         self.function_scope_stack.append(name)
         self.function_scopes[name] = {}
 
