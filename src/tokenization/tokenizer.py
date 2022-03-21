@@ -145,10 +145,6 @@ class Tokenizer:
                 # The type annotation node is included here, so the whole method 
                 # does not need an override in the typed tokenizer
                 self._process_ann_assign(node, token_list)
-            case ImportFrom():
-                self._process_import(node)
-            case Import():
-                self._process_import(node)
     
     def _process_bin_op(self, node: BinOp, tokens: List[Tuple[str, int]]):
         self._classify_and_process_node(node.left, tokens)
@@ -215,9 +211,10 @@ class Tokenizer:
             self._add_token(tokens, Tokens.EXCEPT.value, node)
             if handler.type is not None:
                 if hasattr(handler.type, "id"):
+                    self._add_token(tokens, handler.type.id + "()", handler)
                     tokens.append(handler.type.id + "()")
                 elif hasattr(handler.type, "attr"):
-                    tokens.append(handler.type.attr + "()")
+                    self._add_token(tokens, handler.type.attr + "()", handler)
             self._search_node_body(handler.body, tokens)
             self._add_token(tokens, Tokens.END_EXCEPT.value, node)
         
@@ -346,6 +343,3 @@ class Tokenizer:
     
     def _process_ann_assign(self, node: ast.AnnAssign, tokens: List[Tuple[str, int]]):
         self._classify_and_process_node(node.value, tokens)
-
-    def _process_import(self, node):
-        pass

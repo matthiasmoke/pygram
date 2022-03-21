@@ -13,10 +13,10 @@ class TypeCache:
 
     def __init__(self, name: str) -> None:
         self.name: str = name
-        self._current_import_cache: ImportCache = None
         self._smallest_module_level = sys.maxsize
         self.modules: Dict[str, FileCache] = {}
         self.module_list: List[str] = []
+        self._currently_processed_module: str = None
     
     def add_file_cache(self, module_path: str, cache: "FileCache") -> None:
         self.modules[module_path] = cache
@@ -24,10 +24,9 @@ class TypeCache:
         module_level: int = len(module_path.split("."))
         if module_level < self._smallest_module_level:
             self._smallest_module_level = module_level
-
     
-    def set_current_import_cache(self, import_cache: ImportCache) -> None:
-        self._current_import_cache = import_cache
+    def set_current_module(self, module_path: str) -> None:
+        self._currently_processed_module = module_path
     
     def get_return_type(self, function_name: str, class_name: str = None, module: str = None) -> TypeInfo:
         """
@@ -65,11 +64,11 @@ class TypeCache:
             module_path = potential_modules[0]
         elif len(potential_modules) > 1:
             logger.error("Unable to uniquely map module to function {} in {}"
-            .format(function_name, self._current_import_cache.get_module()))
+            .format(function_name, self._currently_processed_module))
         elif len(potential_modules) == 0:
             if utils.is_not_a_builtin_function(function_name):
                 logger.warning("Could not find matching modules for funcion {} in {}"
-                .format(function_name, self._current_import_cache.get_module()))
+                .format(function_name, self._currently_processed_module))
 
         return module_path
 
@@ -126,11 +125,11 @@ class TypeCache:
                 module_path = "{}.".format(potential_modules[0])
             elif len(potential_modules) > 1:
                 logger.error("Unable to uniquely map module to type {} in {}"
-                .format(type_name, self._current_import_cache.get_module()))
+                .format(type_name, self._currently_processed_module))
             elif len(potential_modules) == 0:
                 if type_name != "str" and type_name != "bool" and type_name != "int":
                     logger.warning("Could not find matching modules for type {} in {}"
-                    .format(type_name, self._current_import_cache.get_module()))
+                    .format(type_name, self._currently_processed_module))
             type_info.set_fully_qualified_name("{}{}".format(module_path, type_name))
         else:
             logger.error("Can not determine module for empty type")
@@ -143,7 +142,7 @@ class TypeCache:
                 return return_type
         
         logger.error("Could not find function {} for class {} in module {} in type cache"
-        .format(function_name, class_name, self._current_import_cache.get_module()))
+        .format(function_name, class_name, self._currently_processed_module))
         return None
 
     def _get_return_type_of_function(self, function_name: str) -> TypeInfo:
@@ -156,7 +155,7 @@ class TypeCache:
             if return_type is not None:
                 return return_type
         logger.error("Could not find function {} for module {} in type cache"
-        .format(function_name, self._current_import_cache.get_module()))
+        .format(function_name, self._currently_processed_module))
         return None
     
     def _get_return_type_of_function_by_module(self, function_name: str, module: str):
@@ -176,15 +175,25 @@ class TypeCache:
         logger.debug("Could not find function \"{}\" in module {}".format(function_name, module))        
         return None
     
+    def _get_current_import_cache(self) -> ImportCache:
+        module_path: str = self._currently_processed_module
+        if "__init__" in module_path:
+            path_parts: List[str] = module_path.rsplit(".", 1)
+
+            if path_parts[1] == "__init__":
+                module_path = path_parts[0]
+        return self.modules[module_path].import_cache
+    
     def _get_modules_for_name(self, name: str) -> str:
         """
         Retruns the modules that contain the given class/function name.
         """
+        current_import_cache: ImportCache = self._get_current_import_cache()
         potential_modules: List[str] = []
-        imported_modules: List[str] = self._current_import_cache.get_module_imports_for_name(name)
+        imported_modules: List[str] = current_import_cache.get_module_imports_for_name(name)
         modules: List[str] = []
         modules += imported_modules
-        modules.append(self._current_import_cache.get_module())
+        modules.append(self._currently_processed_module)
 
         # check if a project internal module contains the name
         for module in modules:
@@ -214,17 +223,21 @@ class FileCache:
 
     def __init__(self, file_name: str) -> None:
         self.file_name = file_name
+        self.import_cache: ImportCache = None
         self._class_cache: Dict[str, ClassCache] = {}
-        self.function_cache: Dict[str, TypeInfo] = {}
+        self._function_cache: Dict[str, TypeInfo] = {}
+    
+    def set_import_cache(self, cache: ImportCache) -> None:
+        self.import_cache = cache
     
     def add_class(self, class_cache: "ClassCache") -> None:
         self._class_cache[class_cache.type] = class_cache
     
-    def add_function(self, function_name: str, type: TypeInfo):
-        self.function_cache[function_name] = type
+    def add_function(self, function_name: str, type: TypeInfo) -> None:
+        self._function_cache[function_name] = type
     
     def get_function_return_type(self, function_name) -> TypeInfo:
-        function_return_type: TypeInfo = self.function_cache.get(function_name, None)
+        function_return_type: TypeInfo = self._function_cache.get(function_name, None)
 
         if function_return_type is None:
             logger.error("Could not find function {} in {}".format(function_name, self.file_name))
@@ -254,7 +267,7 @@ class FileCache:
         return False
     
     def contains_function(self, function_name: str) -> bool:
-        for key in self.function_cache:
+        for key in self._function_cache:
             if key == function_name:
                 return True
 

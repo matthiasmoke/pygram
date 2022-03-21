@@ -21,10 +21,9 @@ class TypeTokenizer(Tokenizer):
     def __init__(self, filepath, module_name, type_cache: TypeCache) -> None:
         super().__init__(filepath, module_name)
         self._type_cache: TypeCache = type_cache
-        self._import_cache = ImportCache(self.module_path, type_cache.module_list)
         self._variable_cache: VariableTypeCache = VariableTypeCache(self.module_path, type_cache)
-        self._type_cache.set_current_import_cache(self._import_cache)
-    
+        self._type_cache.set_current_module(self.module_path)
+
     def _load_syntax_tree(self):
         if os.path.isfile(self._filepath):
             with open(self._filepath, "r") as source:
@@ -32,9 +31,6 @@ class TypeTokenizer(Tokenizer):
                 tree = ast.parse(source.read(), type_comments=True)
                 return tree
         return None
-    
-    def _process_import(self, node):
-        self._import_cache.add_import(node)
 
     def _process_class_def(self, node: ClassDef, module_tokens: List[Tuple[str, int]]) -> List[Tuple[str, int]]:
         """
