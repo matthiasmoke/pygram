@@ -24,12 +24,12 @@ class Pygram:
         self.count_model_path: os.path = None
         self.token_count_model: TokenCountModel = None
         self.project_path: str = None
+        self.save_token_line_numbers = True
 
     @staticmethod
     def _create_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(prog="pygram",
                                         description="N-Gram code analysis for Python projects")
-        parser.add_argument("-f", help="Analyse single Python file")
         parser.add_argument("-d", help="Analyse directory")
         parser.add_argument("-t", action="store_true", help="This flag enables processing of type annotations. The type information added to the tokens")
         parser.add_argument("-o", help="Set a minimum token occurrence. Standard value is 2")
@@ -39,6 +39,7 @@ class Pygram:
         parser.add_argument("--gram-size", help="Set gram size to perform analysis with. Standard value is 3")
         parser.add_argument("--sequence-length", help="Set sequence length for the sequences used in the n-gram model. Standard value is 6")
         parser.add_argument("--reporting-size", help="Set reporting size. Standard value is 10")
+        parser.add_argument("--deactivate-token-line-numbers", help="Removes the line numbers for the tokens. Also in the saved token count model", action="store_true")
 
         return parser
     
@@ -112,7 +113,7 @@ class Pygram:
             project_name, sequence_list = self._tokenize_project(self.project_path)
             print("Finished")
             print("Building intermediate count model...")
-            self.token_count_model = TokenCountModel(sequence_list, name=project_name)
+            self.token_count_model = TokenCountModel(sequence_list, name=project_name, save_line_numbers=self.save_token_line_numbers)
             self.token_count_model.build()
             print("Finished")
             if self.count_model_path:
@@ -169,16 +170,9 @@ class Pygram:
                 path, name = arguments.save_model
                 if not self._set_token_model_save_parameters(path, name):
                     return
-                    
-            if arguments.f is not None:
-                path = os.path.abspath(arguments.f)
-                if os.path.isfile(path) and path.endswith(".py"):
-                    if self.use_type_info:
-                        tokenizer: TypeTokenizer = TypeTokenizer(path, "File", None)
-                    else:
-                        tokenizer: Tokenizer = Tokenizer(path, "File")
-                    tokenizer.process_file()
-                    print(str(tokenizer))
+
+            if arguments.deactivate_token_line_numbers:
+                self.save_token_line_numbers = False
 
             if arguments.d is not None:
                 if self.token_count_model is not None:

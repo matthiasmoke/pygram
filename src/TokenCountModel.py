@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 
 class TokenCountModel():
     
-    def __init__(self, token_sequences={}, name="", count_model={}, single_tokens={}, shortest_sequence_length=0, longest_sequence_length=0):
+    def __init__(self, token_sequences={}, name="", count_model={}, single_tokens={}, shortest_sequence_length=0, longest_sequence_length=0, save_line_numbers: bool = True):
         self.token_sequences: Dict = token_sequences
         self.count_model: Dict = count_model
         self.single_tokens: Dict[str, int] = single_tokens
@@ -12,44 +12,65 @@ class TokenCountModel():
         self.shortest_sequence_length: int = shortest_sequence_length
         self.longest_sequence_length: int = longest_sequence_length
         self.number_of_single_tokens_cache: int = None
+        self.save_line_numbers: bool = save_line_numbers
 
     @staticmethod
     def load_from_file(path) -> "TokenCountModel":
         with open(path, 'r') as inputfile:
             model = json.load(inputfile)
             if model is not None:
-                if "count_model" in model and "project" in model and "token_sequences" in model:
-                    token_sequences: Dict = model["token_sequences"]
-                    converted_token_sequences: Dict[str, List[Tuple[str, int]]] = {}
+                if TokenCountModel._loaded_model_is_valid(model):
+                    saved_line_numbers: bool = model["saved_line_numbers"] == "true"
 
-                    for key, sequences in token_sequences.items():
-                        converted_token_sequences[key] = []
+                    if not saved_line_numbers:
+                        raise RuntimeError("A tokencount model without line numbers serves on ly debug purposes and cannot be imported again.")
+
+                    loaded_token_sequences: Dict = model["token_sequences"]
+                    token_sequences: Dict[str, List[Tuple[str, int]]] = {}
+                    for key, sequences in loaded_token_sequences.items():
+                        token_sequences[key] = []
                         for sequence in sequences:
                             converted_sequence: List[str, int] = []
                             for token in sequence:
                                 converted_sequence.append((token[0], token[1]))
-                            converted_token_sequences[key].append(converted_sequence)
+                            token_sequences[key].append(converted_sequence)
 
 
                     return TokenCountModel(
-                        token_sequences=converted_token_sequences,
+                        token_sequences=token_sequences,
                         name=model["project"],
                         count_model=model["count_model"],
                         shortest_sequence_length=model["shortest_sequence_length"],
                         longest_sequence_length=model["longest_sequence_length"],
-                        single_tokens=model["single_tokens"]
+                        single_tokens=model["single_tokens"],
+                        save_line_numbers=saved_line_numbers
                         )
         return None
     
 
     def save_to_file(self, path) -> None:
+
+        saved_sequences = self.token_sequences
+        if not self.save_line_numbers:
+            converted_token_sequences: Dict[str, List[List[str]]] = {}
+            for key, value in self.token_sequences.items():
+                converted_token_sequences[key] = []
+                for sequence in value:
+                    converted_sequence: List[str] = []
+                    for token in sequence:
+                        converted_sequence.append(token[0])
+                    converted_token_sequences[key].append(converted_sequence)
+            saved_sequences = converted_token_sequences
+
+
         with open(path, 'w') as outfile:
             json.dump({
             "project": self.name,
+            "saved_line_numbers": self.save_line_numbers,
             "shortest_sequence_length": self.shortest_sequence_length,
             "longest_sequence_length": self.longest_sequence_length,
             "single_tokens": self.single_tokens,
-            "token_sequences": self.token_sequences,
+            "token_sequences": saved_sequences,
             "count_model": self.count_model
             }, outfile)
 
@@ -70,7 +91,6 @@ class TokenCountModel():
                     for count in range(index + 1, len(sequence)):
                         token_sub_sequence += sequence[count][0]
                         self._count_token(token_sub_sequence)
-    
 
     def get_sequence_list_without_meta_data(self) -> List:
         """
@@ -136,3 +156,7 @@ class TokenCountModel():
         
         if self.longest_sequence_length == 0 or self.longest_sequence_length < sequence_length:
             self.longest_sequence_length = sequence_length
+
+    @staticmethod
+    def _loaded_model_is_valid(model) -> bool:
+        return "count_model" in model and "project" in model and "token_sequences" in model and "saved_line_numbers" in model and "single_tokens" in model
