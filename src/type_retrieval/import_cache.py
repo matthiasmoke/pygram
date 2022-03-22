@@ -5,8 +5,17 @@ class ImportCache():
         self._imports: Dict[str, List[str]] = {}
         # maps aliases to real class names. Ignores cases where the "as" directive names to types equally
         self._as_imports: Dict[str, str] = {}
+
+    def add_import(self, module_path: str, imported_entities: List[str]) -> None:
+        if self._imports.get(module_path, None) is None:
+            self._imports[module_path] = imported_entities
+        else:
+            self._imports[module_path] += imported_entities
     
-    def get_module_imports_for_name(self, name: str) -> str:
+    def add_import_alias(self, as_name: str, entity_name: str) -> None:
+        self._as_imports[as_name] = entity_name
+    
+    def get_module_imports_for_name(self, name: str) -> List[str]:
         """
         Retruns the imported modules that contain the given class/function name.
         """
@@ -35,15 +44,6 @@ class ImportCache():
             if module in name:
                 return True
         return False
-    
-    def add_import(self, module_path: str, imported_entities: List[str]):
-        if self._imports.get(module_path, None) is None:
-            self._imports[module_path] = imported_entities
-        else:
-            self._imports[module_path] += imported_entities
-    
-    def add_import_alias(self, as_name: str, entity_name: str):
-        self._as_imports[as_name] = entity_name
 
         
 

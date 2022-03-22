@@ -14,13 +14,11 @@ class TypeCache:
     def __init__(self, name: str) -> None:
         self.name: str = name
         self._smallest_module_level = sys.maxsize
-        self.modules: Dict[str, FileCache] = {}
-        self.module_list: List[str] = []
         self._currently_processed_module: str = None
+        self.modules: Dict[str, FileCache] = {}
     
     def add_file_cache(self, module_path: str, cache: "FileCache") -> None:
         self.modules[module_path] = cache
-        self.module_list.append(module_path)
         module_level: int = len(module_path.split("."))
         if module_level < self._smallest_module_level:
             self._smallest_module_level = module_level
@@ -86,29 +84,6 @@ class TypeCache:
             return module.contains_function(function_name)
         return False
     
-    def _get_existing_module_in_cache(self, module_path: str) -> Tuple[str, str]:
-        """
-        Checks if a given module exists in the cache. If the it is not found,
-        the function always removes the last part of the path and checks again as long as 
-        the split path level is bigger than the smallest path level in the cache.
-        Returns the found module and the split part
-        """
-        module: FileCache = self.modules.get(module_path, None)
-        module_path_parts: int = len(module_path.split("."))
-        number_of_splits: int = module_path_parts - self._smallest_module_level
-        class_name: str = ""
-        if module is None:
-            for index in range(0, number_of_splits):
-                split_path = module_path.rsplit(".", 1)
-                module_path = split_path[0]
-                class_name = "{}.{}".format(split_path[1], class_name)
-                module = self.modules.get(module_path, None)
-
-                if module is not None:
-                    return (module, class_name[:-1])
-
-        return (module, class_name)
-    
     def populate_type_info_with_module(self, type_info: TypeInfo) -> None:
         if type_info is None or type_info.fully_qualified_name != "":
             return
@@ -133,6 +108,29 @@ class TypeCache:
             type_info.set_fully_qualified_name("{}{}".format(module_path, type_name))
         else:
             logger.error("Can not determine module for empty type")
+    
+    def _get_existing_module_in_cache(self, module_path: str) -> Tuple[str, str]:
+        """
+        Checks if a given module exists in the cache. If the it is not found,
+        the function always removes the last part of the path and checks again as long as 
+        the split path level is bigger than the smallest path level in the cache.
+        Returns the found module and the split part
+        """
+        module: FileCache = self.modules.get(module_path, None)
+        module_path_parts: int = len(module_path.split("."))
+        number_of_splits: int = module_path_parts - self._smallest_module_level
+        class_name: str = ""
+        if module is None:
+            for index in range(0, number_of_splits):
+                split_path = module_path.rsplit(".", 1)
+                module_path = split_path[0]
+                class_name = "{}.{}".format(split_path[1], class_name)
+                module = self.modules.get(module_path, None)
+
+                if module is not None:
+                    return (module, class_name[:-1])
+
+        return (module, class_name)
     
     def _get_return_type_of_class_function(self, function_name: str, class_name: str) -> TypeInfo:
         caches: List[FileCache] = self._get_file_caches_for_name(class_name)
@@ -275,19 +273,19 @@ class ClassCache:
 
     def __init__(self, class_name: str) -> None:
         self.type: str = class_name
-        self.functions: Dict[str, TypeInfo] = {}
+        self._functions: Dict[str, TypeInfo] = {}
     
-    def add_function(self, function_name: str, type: TypeInfo):
-        self.functions[function_name] = type
+    def add_function(self, function_name: str, type: TypeInfo) -> None:
+        self._functions[function_name] = type
     
     def contains_function(self, function_name) -> bool:
-        return function_name in self.functions
+        return function_name in self._functions
     
     def is_type(self, type_name: str) -> bool:
         return self.type == type_name
 
     def get_function_return_type(self, function_name: str) -> TypeInfo:
-        type: TypeInfo = self.functions.get(function_name, None)
+        type: TypeInfo = self._functions.get(function_name, None)
         if type is None:
             logger.error("Could not find function {} in class {}".format(function_name, self.type))
         return type
