@@ -1,6 +1,7 @@
 import os
 from typing import List, Tuple
 import logging
+import difflib
 from _ast import ClassDef, FunctionDef, AsyncFunctionDef, Import, ImportFrom
 
 from .import_cache import ImportCache
@@ -116,15 +117,26 @@ class TypePreprocessor():
                 possible_modules_for_import.append(path)
         
         if len(possible_modules_for_import) > 1:
-            logger.error("Could not uniquely assign absolute import {} to module.\n Current Module {}, line no: {}"
+            logger.debug("Could not uniquely assign absolute import {} to imported module.\n Current Module {}, line no: {}"
             .format(import_path, self._current_module_path, node.lineno))
-            return None
-        
+            return self._find_highest_matching_module(import_path, possible_modules_for_import)
+
         # if no possible modules are found, the imported module is not part of the project
         if len(possible_modules_for_import) == 0:
             return import_path
         
         return possible_modules_for_import[0]
+    
+    def _find_highest_matching_module(self, import_path: str, modules: List[str]) -> str:
+        """
+        Finds a module in the given available module with matches the given import path the most
+        """
+        matches: List[str] = difflib.get_close_matches(import_path, modules, 3)
+        logger.debug("Found {} best matches for import {}".format(len(matches), import_path))
+        if len(matches) == 0:
+            logger.debug("Could not find best matches for import {}".format(import_path))
+            return import_path
+        return matches[0]
 
     def _get_available_modules(self, files: List[str]) -> List[str]:
         """
