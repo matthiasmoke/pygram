@@ -5,8 +5,6 @@ from _ast import arg, arguments ,Constant, Call, For, AnnAssign, Constant, Attri
 import _ast
 from typing import List, Tuple
 
-from ..type_retrieval.import_cache import ImportCache
-
 from ..type_retrieval.preprocessed_type_caches import TypeCache
 from .tokenizer import Tokenizer
 from ..type_retrieval.type_info import TypeInfo
@@ -21,7 +19,7 @@ class TypeTokenizer(Tokenizer):
     def __init__(self, filepath, module_name, type_cache: TypeCache) -> None:
         super().__init__(filepath, module_name)
         self._type_cache: TypeCache = type_cache
-        self._variable_cache: VariableTypeCache = VariableTypeCache(self.module_path, type_cache)
+        self._variable_cache: VariableTypeCache = VariableTypeCache(self.module_path)
         self._type_cache.set_current_module(self.module_path)
 
     def _load_syntax_tree(self):
@@ -39,7 +37,12 @@ class TypeTokenizer(Tokenizer):
         Changes the current variable cache scope to the currently processed class
         """
         class_tokens = []
+        # create cache for class and add self type
         self._variable_cache.set_class_scope(node.name)
+        class_type = TypeInfo(label=node.name)
+        self._type_cache.populate_type_info_with_module(class_type)
+        self._variable_cache.add_variable("self", class_type)
+
         for child in node.body:
             if isinstance(child, FunctionDef) or isinstance(child, AsyncFunctionDef):
                 result = self._process_function_def(child)
@@ -129,12 +132,27 @@ class TypeTokenizer(Tokenizer):
         """
         function_name: str = node.attr
         self._process_call(node.value, tokens)
-        prev_function_name, prev_module =  self._retrieve_module_and_function_name_from_token(tokens[-1][0])
+        prev_function_name, prev_module =  self._retrieve_module_and_function_from_token(tokens[-1][0])
         return_type: TypeInfo = self._type_cache.get_return_type(prev_function_name, module=prev_module)
         token: str = self._construct_call_token(function_name, type=return_type)
         self._add_token(tokens, token, node)
+
+    def _process_arguments(self, node: arguments) -> None:
+            """
+            Adds annotated function arguments to variable cache
+            """
+            for child in node.args:
+                if isinstance(child, arg):
+                    if child.annotation is not None:
+                        info: TypeInfo = TypeInfo(child.annotation)
+                        self._type_cache.populate_type_info_with_module(info)
+                        name: str = child.arg
+                        self._variable_cache.add_variable(name, info)
+                else:
+                    logger.error("Unknown argument node type in line {}".format(node.lineno))
+
     
-    def _retrieve_module_and_function_name_from_token(self, token_string: str) -> Tuple[str, str]:
+    def _retrieve_module_and_function_from_token(self, token_string: str) -> Tuple[str, str]:
         """
         Returns a tuple which contains (function name, module)
         """
@@ -216,7 +234,7 @@ class TypeTokenizer(Tokenizer):
             self._search_node_body(node.orelse, tokens)
         self._add_token(tokens, Tokens.END_FOR.value, node)
     
-    def _cache_variables_in_for_block(self, node: For):
+    def _cache_variables_in_for_block(self, node: For) -> None:
         """
         Caches variables and their respective types which are used in a for block
         """
@@ -284,14 +302,3 @@ class TypeTokenizer(Tokenizer):
 
         except AttributeError:
             logger.error("Failed processing AnnAssign in module {}".format(self.module_path))
-    
-    def _process_arguments(self, node: arguments) -> None:
-        for child in node.args:
-            if isinstance(child, arg):
-                if child.annotation is not None:
-                    info: TypeInfo = TypeInfo(child.annotation)
-                    self._type_cache.populate_type_info_with_module(info)
-                    name: str = child.arg
-                    self._variable_cache.add_variable(name, info)
-            else:
-                logger.error("Unknown argument node type in line {}".format(node.lineno))
