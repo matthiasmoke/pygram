@@ -1,8 +1,8 @@
 from decimal import Decimal
 from typing import Dict, List, Tuple
 from itertools import islice
-from .utils import Utils
-from .NGramModel import NGramModel
+from ..utils import Utils
+from .n_gram_model import NGramModel
 
 
 class ReportingService():

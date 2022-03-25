@@ -3,12 +3,12 @@ import os
 import sys
 from .type_retrieval.preprocessed_type_caches import TypeCache
 from .type_retrieval.project_preprocessor import TypePreprocessor
-from .TokenCountModel import TokenCountModel
-from .NGramModel import NGramModel
+from .analysis.token_count_model import TokenCountModel
+from .analysis.n_gram_model import NGramModel
 from .utils import Utils
 from .tokenization.tokenizer import Tokenizer
 from .tokenization.type_tokenizer import TypeTokenizer
-from .Reporting import ReportingService
+from .analysis.reporting import ReportingService
 
 from typing import Dict, Tuple, List
 

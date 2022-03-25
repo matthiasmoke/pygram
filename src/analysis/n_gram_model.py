@@ -1,7 +1,6 @@
 from decimal import Decimal
 from typing import Dict, List
-from .utils import Utils
-from .TokenCountModel import TokenCountModel
+from .token_count_model import TokenCountModel
 
 
 class NGramModel():
