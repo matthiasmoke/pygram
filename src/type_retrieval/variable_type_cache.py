@@ -108,6 +108,9 @@ class VariableTypeCache:
     
     def _set_class_variable(self, variable_name: str, type_info: TypeInfo) -> None:
         current_class = self._class_scope_stack[-1]
+
+        if self._class_scopes.get(current_class, None) is None:
+            self._class_scopes[current_class] = {}
         self._class_scopes[current_class][variable_name] = type_info
     
     def _get_class_variable(self, variable_name: str) -> TypeInfo:
