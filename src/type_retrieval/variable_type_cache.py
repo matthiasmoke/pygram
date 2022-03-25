@@ -22,8 +22,8 @@ class VariableTypeCache:
         self._scope_stack: List[Scope] = []
         self._class_scope_stack: List[str] = []
         self._function_scope_stack: List[str] = []
-        self._class_scopes: Dict[str, Dict[str, TypeInfo]] = {}
-        self._function_scopes: Dict[str, Dict[str, TypeInfo]] = {}
+        self._class_variables: Dict[str, Dict[str, TypeInfo]] = {}
+        self._function_variables: Dict[str, Dict[str, TypeInfo]] = {}
 
     
     def set_class_scope(self, name: str) -> None:
@@ -32,7 +32,7 @@ class VariableTypeCache:
 
     def leave_class_scope(self):
         left_class: str = self._class_scope_stack[-1]
-        del self._class_scopes[left_class]
+        del self._class_variables[left_class]
         self._class_scope_stack.pop()
         self._scope_stack.pop()
     
@@ -41,11 +41,11 @@ class VariableTypeCache:
         if name in self._function_scope_stack:
             name += "_{}".format(Utils.get_random_string(5))
         self._function_scope_stack.append(name)
-        self._function_scopes[name] = {}
+        self._function_variables[name] = {}
 
     def leave_function_scope(self):
         left_function_scope = self._function_scope_stack[-1]
-        del self._function_scopes[left_function_scope]
+        del self._function_variables[left_function_scope]
         self._function_scope_stack.pop()
         self._scope_stack.pop()
 
@@ -91,7 +91,7 @@ class VariableTypeCache:
     def _get_inner_class_path(self, name: str) -> str:
         output: str = ""
         if name is not None:
-            for key in self._class_scopes:
+            for key in self._class_variables:
                 output += "{}.".format(key)
             output += name
         return output
@@ -109,21 +109,21 @@ class VariableTypeCache:
     def _set_class_variable(self, variable_name: str, type_info: TypeInfo) -> None:
         current_class = self._class_scope_stack[-1]
 
-        if self._class_scopes.get(current_class, None) is None:
-            self._class_scopes[current_class] = {}
-        self._class_scopes[current_class][variable_name] = type_info
+        if self._class_variables.get(current_class, None) is None:
+            self._class_variables[current_class] = {}
+        self._class_variables[current_class][variable_name] = type_info
     
     def _get_class_variable(self, variable_name: str) -> TypeInfo:
         current_class = self._class_scope_stack[-1]
-        return self._class_scopes[current_class].get(variable_name, None)
+        return self._class_variables[current_class].get(variable_name, None)
     
     def _get_function_variable(self, name: str) -> TypeInfo:
         for scope in reversed(self._function_scope_stack):
-            variable = self._function_scopes[scope].get(name, None)
+            variable = self._function_variables[scope].get(name, None)
             if variable is not None:
                 return variable
         return None
 
     def _set_function_variable(self, variable_name: str, variable_type: TypeInfo) -> None:
         current_function = self._function_scope_stack[-1]
-        self._function_scopes[current_function][variable_name] = variable_type
+        self._function_variables[current_function][variable_name] = variable_type
