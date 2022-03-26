@@ -18,7 +18,6 @@ class Pygram:
         self.use_type_info: bool = False
         self.gram_size: int = 3
         self.sequence_length: int = 6
-        self.split_sequences: bool = False
         self.minimum_token_count: int = 3
         self.reporting_size: int = 10
         self.count_model_path: os.path = None
@@ -33,7 +32,6 @@ class Pygram:
         parser.add_argument("-d", help="Analyse directory")
         parser.add_argument("-t", action="store_true", help="This flag enables processing of type annotations. The type information added to the tokens")
         parser.add_argument("-o", help="Set a minimum token occurrence. Standard value is 2")
-        parser.add_argument("--split-sequences", action="store_true", help="Split token sequences instead of using a sliding window")
         parser.add_argument("--load-model", help="Load model from file (.json)")
         parser.add_argument("--save-model", nargs=2, help="Save the intermediate token count model to a file")
         parser.add_argument("--gram-size", help="Set gram size to perform analysis with. Standard value is 3")
@@ -127,7 +125,6 @@ class Pygram:
                 self.gram_size,
                 self.sequence_length,
                 self.minimum_token_count,
-                self.split_sequences
             )
             ngram_model.build()
             print("Finished")
@@ -157,9 +154,6 @@ class Pygram:
             
             if arguments.reporting_size is not None:
                 self.reporting_size = arguments.reporting_size
-            
-            if arguments.split_sequences:
-                self.split_sequences = True
             
             if arguments.load_model is not None:
                 self.token_count_model = Pygram._load_token_count_model_from_file(arguments.load_model)

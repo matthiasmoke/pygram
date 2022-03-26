@@ -6,13 +6,12 @@ from .token_count_model import TokenCountModel
 class NGramModel():
 
     def __init__(self, token_count_model: TokenCountModel,
-                 gram_size: int, max_sequence_length: int, minimum_token_occurrence: int, split_sequences: bool
+                 gram_size: int, max_sequence_length: int, minimum_token_occurrence: int,
                  ) -> None:
         self.token_count_model: TokenCountModel = token_count_model
         self.gram_size: int = gram_size
         self.max_sequence_length: int = max_sequence_length
         self.minimum_token_occurrence: int = minimum_token_occurrence
-        self.split_sequences: int = split_sequences
         self.model: Dict = {}
     
 
@@ -42,8 +41,8 @@ class NGramModel():
 
     def _split_sequences(self) -> List:
         """
-        Splits sequences which are longer than the max. sequence length into smaller sequences.
-        Either by using a sliding window or hard splitting them according to the configuration
+        Splits sequences which are longer than the max. sequence length into smaller sequences
+        by using a sliding window procedure
         """
         sequences: List[List[str]] = self.token_count_model.get_sequence_list_without_meta_data()
         max: int = self.max_sequence_length
@@ -51,12 +50,7 @@ class NGramModel():
 
         for sequence in iter(sequences):
             if len(sequence) > max:
-                
-                if self.split_sequences:
-                    self._hard_split_sequence(sequence, split_sequences)
-                else:
-                    self._split_sequence_with_sliding_window(sequence, split_sequences)
-
+                self._split_sequence_with_sliding_window(sequence, split_sequences)
             else:
                 split_sequences.append(sequence)
 
