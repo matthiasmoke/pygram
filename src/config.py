@@ -10,7 +10,6 @@ CONFIG_OPTS: List[str] = [
     "use_type_info",
     "gram_size",
     "sequence_length",
-    "split_sequences",
     "minimum_token_occurrence",
     "reporting_size",
     "path_to_token_count_model",
@@ -22,8 +21,10 @@ CONFIG_OPTS: List[str] = [
 ]
 
 RUNNER_CONFIG_OPTS: List[str] = [
+    "analysis_result_folder",
     "gram_sizes",
     "sequence_lengths",
+    "minimum_token_occurrences",
     "report_name_prefix",
     "typed",
     "untyped"
@@ -34,15 +35,19 @@ class RunnerConfig():
     def __init__(self, 
     sequence_lengths: List[int], 
     gram_sizes: List[int],
+    minimum_token_occurrences: List[int],
     report_name_prefix: str,
     typed: bool,
-    untyped: bool
+    untyped: bool,
+    analysis_result_folder: str
     ) -> None:
         self.sequence_lengths: List[int] = sequence_lengths
         self.gram_sizes: List[int] = gram_sizes
-        report_name_prefix: str = report_name_prefix
-        typed: bool = typed
-        untyped: bool = untyped
+        self.minimum_token_occurrences: List[int] = minimum_token_occurrences
+        self.report_name_prefix: str = report_name_prefix
+        self.typed: bool = typed
+        self.untyped: bool = untyped
+        self.analysis_result_folder: str = analysis_result_folder
     
 
     @staticmethod
@@ -61,6 +66,8 @@ class RunnerConfig():
                 report_name_prefix=json_config.report_name_prefix,
                 typed=json_config.typed,
                 untyped=json_config.untyped,
+                minimum_token_occurrences=json_config.minimum_token_occurrences,
+                analysis_result_folder=json_config.analysis_result_folder
             )
             return new_config
 
@@ -74,7 +81,6 @@ class Config:
     use_type_info: bool = False,
     gram_size: int = 3,
     sequence_length: int = 3,
-    split_sequences: bool = False,
     minimum_token_occurrence: int = 3,
     reporting_size: int = 10,
     save_token_line_numbers: bool = True,
@@ -84,7 +90,6 @@ class Config:
         self.use_type_info: bool = use_type_info
         self.gram_size: int = gram_size
         self.sequence_length: int = sequence_length
-        self.split_sequences: bool = split_sequences
         self.minimum_token_occurrence: int = minimum_token_occurrence
         self.reporting_size: int = reporting_size
         self.path_to_token_count_model: os.path = path_to_token_count_model
@@ -109,7 +114,6 @@ class Config:
                         use_type_info=config.use_type_info,
                         gram_size=config.gram_size,
                         sequence_length=config.sequence_length,
-                        split_sequences=config.split_sequences,
                         minimum_token_occurrence=config.minimum_token_occurrence,
                         reporting_size=config.reporting_size,
                         path_to_token_count_model=config.path_to_token_count_model,

@@ -1,4 +1,6 @@
+from asyncio.log import logger
 from decimal import Decimal
+import os
 from typing import Dict, List, Tuple
 from itertools import islice
 from ..utils import Utils
@@ -45,6 +47,17 @@ class ReportingService():
         
         self.report = report
         return report
+    
+    def save_to_file(self, destination: str, name: str) -> None:
+        if os.path.isdir(destination):
+            report_file = os.path.join(destination, "{}.txt".format(name))
+
+            with open(report_file, "w") as outputfile:
+                outputfile.write(str(self))
+                outputfile.close
+        else:
+            logger.error("Could not save report to destionation {}. Not a directory".format(destination))
+            raise RuntimeError("Could not save report!")
 
     
     def _get_corresponding_modules(self, sub_sequence: str) -> List[Tuple[str, int, int]]:

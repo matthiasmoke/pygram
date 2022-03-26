@@ -2,7 +2,6 @@
     "use_type_info": false,
     "gram_size": 3,
     "sequence_length": 3,
-    "split_sequences": false,
     "minimum_token_occurrence": 3,
     "reporting_size": 10,
     "path_to_token_count_model": "",
@@ -12,8 +11,10 @@
     "save_token_line_numbers": true,
     "do_analysis_run": false,
     "analysis_run": {
+        "analysis_result_folder": "",
         "gram_sizes": [1, 2, 3],
         "sequence_lengths": [4, 5, 6],
+        "minimum_token_occurrences": [ 3 ],
         "report_name_prefix": "",
         "typed": true,
         "untyped": true
