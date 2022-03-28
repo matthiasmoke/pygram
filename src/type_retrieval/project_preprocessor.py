@@ -62,14 +62,15 @@ class TypePreprocessor():
                 name, return_type = self._process_function(node)
                 cache.add_function(name, return_type)
             elif isinstance(node, Import):
-                self._process_import
+                self._process_import(node)
             elif isinstance(node, ImportFrom):
                 self._process_import_from(node)
     
     def _process_import(self, node: Import):
         for module in node.names:
             name: str = module.name
-            self._current_file_cache.import_cache.add_import(name, [name])
+            complete_path: str = self._generate_complete_absolute_import_path(module.name, node)
+            self._current_file_cache.import_cache.add_import(complete_path, [complete_path])
 
             if module.asname:
                 self._current_file_cache.import_cache.add_import_alias(module.asname, name)
@@ -113,7 +114,7 @@ class TypePreprocessor():
         """
         possible_modules_for_import: List[str] = []
         for path in self._available_modules:
-            if import_path in path:
+            if self._sub_path_in_path(import_path, path):
                 possible_modules_for_import.append(path)
         
         if len(possible_modules_for_import) > 1:
@@ -127,6 +128,28 @@ class TypePreprocessor():
         
         return possible_modules_for_import[0]
     
+    def _sub_path_in_path(self, sub_path: str, path: str) -> bool:
+        """
+        Returns if a given module sub_path (e.g. an import) is part of a longer path 
+        """
+
+        split_sub_path: List[str] = sub_path.split(".")
+        path_split: List[str] = path.split(".")
+        sub_part_in_path: bool = True
+
+        for sub_part in split_sub_path:
+            if sub_part_in_path:
+                sub_part_in_path = False
+            else:
+                return False
+
+            for path_part in path_split:
+                if sub_part == path_part:
+                    sub_part_in_path = True
+                    break
+        return sub_part_in_path
+
+
     def _find_highest_matching_module(self, import_path: str, modules: List[str]) -> str:
         """
         Finds a module in the given available module with matches the given import path the most
