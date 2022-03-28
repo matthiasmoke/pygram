@@ -70,7 +70,7 @@ class TypePreprocessor():
         for module in node.names:
             name: str = module.name
             complete_path: str = self._generate_complete_absolute_import_path(module.name, node)
-            self._current_file_cache.import_cache.add_import(complete_path, [complete_path])
+            self._current_file_cache.import_cache.add_import(complete_path, [module.name])
 
             if module.asname:
                 self._current_file_cache.import_cache.add_import_alias(module.asname, name)
