@@ -79,9 +79,7 @@ class TypeTokenizer(Tokenizer):
 
         if isinstance(node.func, Name):
             function_name = node.func.id
-            module: str = self._type_cache.find_module_for_function(function_name)
-            token = self._construct_call_token(function_name, module=module)
-            self._add_token(tokens, token, node)
+            self._process_standalone_function(function_name, tokens, node)
         elif isinstance(node.func, Attribute):
             attribute: Attribute = node.func
             if isinstance(attribute.value, Subscript) or isinstance(attribute.value, Name) or isinstance(attribute.value, Attribute):
@@ -95,9 +93,19 @@ class TypeTokenizer(Tokenizer):
             else:
                 logger.error("Unable to determine Attribute type on Call in module {}, line {}"
                 .format(self.module_path, attribute.lineno))
+        elif isinstance(node.func, Call):
+            self._process_call(node.func, tokens)
+        elif isinstance(node.func, Subscript):
+            function_name = node.func.value.id
+            self._process_standalone_function(function_name, tokens, node)
         else:
             logger.error("Unable to determine method name in module {} in line {}"
             .format(self.module_path, node.lineno))   
+    
+    def _process_standalone_function(self, function_name: str, tokens: List[Tuple[str, int]], node: Call) -> None:
+        module: str = self._type_cache.find_module_for_function(function_name)
+        token = self._construct_call_token(function_name, module=module)
+        self._add_token(tokens, token, node)
 
     def _process_call_on_object(self, node: Attribute, tokens: List[Tuple[str, int]]) -> None: 
         """
