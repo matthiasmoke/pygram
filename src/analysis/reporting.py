@@ -1,4 +1,4 @@
-from asyncio.log import logger
+import logging
 from decimal import Decimal
 import os
 from typing import Tuple
@@ -8,6 +8,7 @@ from itertools import islice
 from ..utils import Utils
 from .n_gram_model import NGramModel
 
+logger = logging.getLogger("main")
 
 class ReportingService():
 
