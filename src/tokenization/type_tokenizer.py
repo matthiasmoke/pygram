@@ -192,7 +192,8 @@ class TypeTokenizer(Tokenizer):
     
     def _get_origin_of_subscript(self, node: Subscript, depth: int) -> Tuple[str, int]:
         """
-        Returns the name of the List/Dict/Tuple/etc which contains the object on which the method call happens
+        Returns the name of the List/Dict/Tuple/etc that contains the object on which the method call happens.
+        Additionally, it returns how deep the subscript tree goes
         """
         value = node.value
         origin_name = ""

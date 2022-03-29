@@ -65,7 +65,7 @@ class TypeInfo:
                 # when requested type is within tuple or dict ignore depth and return it
                 if current_child.is_tuple_or_dict() and (depth - i == 1):
                     return current_child
-                # if current type is dict, use second contained type, ant not the first as it is usually the key
+                # if current type is dict, use second contained type, ant not the first as usually the value is accessed and not the key
                 elif current_child.is_dict():
                     current_child = current_child._contained_types[1]
                 else:
