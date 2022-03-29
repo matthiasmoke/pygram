@@ -1,7 +1,9 @@
 from asyncio.log import logger
 from decimal import Decimal
 import os
-from typing import Dict, List, Tuple
+from typing import Tuple
+from typing import Dict
+from typing import List
 from itertools import islice
 from ..utils import Utils
 from .n_gram_model import NGramModel
@@ -9,7 +11,12 @@ from .n_gram_model import NGramModel
 
 class ReportingService():
 
-    def __init__(self, language_model: NGramModel, token_sequences: Dict, reporting_size: int) -> None:
+    def __init__(
+        self,
+        language_model: NGramModel,
+        token_sequences: Dict,
+        reporting_size: int
+    ) -> None:
         self.language_model: NGramModel = language_model
         self.reporting_size: int = reporting_size
         self.token_sequences: Dict = self._convert_token_sequences(token_sequences)

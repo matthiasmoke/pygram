@@ -1,16 +1,30 @@
 import logging
 import ast
 import os
-from _ast import arg, arguments ,Constant, Call, For, AnnAssign, Constant, Attribute, Name, Subscript, FunctionDef, ClassDef, AsyncFunctionDef
 import _ast
-from typing import List, Tuple
+from _ast import arg
+from _ast import arguments
+from _ast import Constant
+from _ast import Call
+from _ast import For
+from _ast import AnnAssign
+from _ast import Constant
+from _ast import Attribute
+from _ast import Name
+from _ast import Subscript
+from _ast import FunctionDef
+from _ast import ClassDef
+from _ast import AsyncFunctionDef
+
+from typing import Tuple
+from typing import List
 
 from ..type_retrieval.preprocessed_type_caches import TypeCache
-from .tokenizer import Tokenizer
 from ..type_retrieval.type_info import TypeInfo
 from ..type_retrieval.variable_type_cache import VariableTypeCache
-from .tokens import Tokens
 from ..utils import Utils
+from .tokens import Tokens
+from .tokenizer import Tokenizer
 
 logger = logging.getLogger("main")
 

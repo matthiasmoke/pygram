@@ -1,11 +1,47 @@
 import logging
-import ast
 import os
-from _ast import Subscript, YieldFrom, UnaryOp, BinOp, Match, Global, Nonlocal, Delete, ImportFrom, Import, ClassDef, FunctionDef, AsyncFunctionDef, Name, Attribute, AnnAssign, Assign, AugAssign, Continue, Yield, Await, With, withitem, Pass, Expr, Return, For, While, If, BoolOp, Compare, Call, Raise, Try, Assert, Pass, Yield, Break
+import ast
 import _ast
-from typing import List, Tuple
+from _ast import Subscript
+from _ast import YieldFrom
+from _ast import UnaryOp
+from _ast import BinOp
+from _ast import Match
+from _ast import Global
+from _ast import Nonlocal
+from _ast import Delete 
+from _ast import ClassDef
+from _ast import FunctionDef
+from _ast import AsyncFunctionDef
+from _ast import Name
+from _ast import Attribute
+from _ast import AnnAssign
+from _ast import Assign
+from _ast import AugAssign
+from _ast import Continue
+from _ast import Yield
+from _ast import Await
+from _ast import With
+from _ast import withitem
+from _ast import Pass
+from _ast import Expr
+from _ast import Return
+from _ast import For
+from _ast import While
+from _ast import If
+from _ast import BoolOp
+from _ast import Compare
+from _ast import Call
+from _ast import Raise
+from _ast import Try
+from _ast import Assert
+from _ast import Pass
+from _ast import Yield
+from _ast import Break
 
-from ..utils import Utils
+from typing import List
+from typing import Tuple
+
 from .tokens import Tokens
 
 

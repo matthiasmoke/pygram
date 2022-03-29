@@ -1,13 +1,19 @@
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict
+from typing import List
+
 from .token_count_model import TokenCountModel
 
 
 class NGramModel():
 
-    def __init__(self, token_count_model: TokenCountModel,
-                 gram_size: int, max_sequence_length: int, minimum_token_occurrence: int,
-                 ) -> None:
+    def __init__(
+        self, 
+        token_count_model: TokenCountModel,
+        gram_size: int,
+        max_sequence_length: int,
+        minimum_token_occurrence: int,
+    ) -> None:
         self.token_count_model: TokenCountModel = token_count_model
         self.gram_size: int = gram_size
         self.max_sequence_length: int = max_sequence_length

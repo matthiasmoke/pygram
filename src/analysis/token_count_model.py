@@ -1,10 +1,20 @@
 
 import json
-from typing import Dict, List, Tuple
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 class TokenCountModel():
     
-    def __init__(self, token_sequences={}, name="", count_model={}, single_tokens={}, shortest_sequence_length=0, longest_sequence_length=0, save_line_numbers: bool = True):
+    def __init__(self, 
+        token_sequences={},
+        name="",
+        count_model={},
+        single_tokens={},
+        shortest_sequence_length=0,
+        longest_sequence_length=0,
+        save_line_numbers: bool = True
+    ):
         self.token_sequences: Dict = token_sequences
         self.count_model: Dict = count_model
         self.single_tokens: Dict[str, int] = single_tokens
