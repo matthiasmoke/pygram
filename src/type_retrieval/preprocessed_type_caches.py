@@ -88,7 +88,7 @@ class TypeCache:
         if type_info is None or type_info.fully_qualified_name != "":
             return
         
-        type_name: str = type_info.get_label()
+        type_name: str = type_info.label
         contained_types: List[TypeInfo] = type_info.get_contained_types()
         for type in contained_types:
             self.populate_type_info_with_module(type)

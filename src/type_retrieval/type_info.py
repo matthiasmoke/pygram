@@ -10,20 +10,20 @@ logger = logging.getLogger("main")
 class TypeInfo:
 
     def __init__(self, annotation_node = None, label: str = "") -> None:
-        self._label: str = label
+        self.label: str = label
         self._contained_types: List[TypeInfo] = []
         if annotation_node is not None:
-            self._create_from_annotation_node(annotation_node)
+            self._create_from_annotation(annotation_node)
         self.fully_qualified_name: str = ""
     
     def __str__(self) -> str:
-        if self.fully_qualified_name == self._label or self.fully_qualified_name == "":
-            return self._label
+        if self.fully_qualified_name == self.label or self.fully_qualified_name == "":
+            return self.label
         else:
             return self.fully_qualified_name
     
     def get_label(self) -> str:
-        return self._label
+        return self.label
     
     def get_contained_types(self) -> List["TypeInfo"]:
         return self._contained_types
@@ -77,23 +77,23 @@ class TypeInfo:
         return current_child
     
     def is_tuple_or_dict(self) -> bool:
-        return self._label == "Dict" or self._label == "Tuple"
+        return self.is_dict() or self.label == "Tuple"
     
     def is_dict(self) -> bool:
-        return self._label == "Dict"
+        return self.label == "Dict"
     
-    def _create_from_annotation_node(self, node) -> None:
+    def _create_from_annotation(self, node) -> None:
         if isinstance(node, Name):
-            self._label = node.id
+            self.label = node.id
         elif isinstance(node, Constant):
-            self._label = node.value
+            self.label = node.value
         elif isinstance(node, Subscript):
-            self._label = Utils.get_name_from_subscript(node)
+            self.label = Utils.get_name_from_subscript(node)
             contained = self._get_type_from_subscript(node)
             self.set_contained_types(contained)
         elif isinstance(node, Attribute):
             name: str = Utils.get_full_name_from_attribute_node(node)
-            self._label = name
+            self.label = name
     
     def _get_type_from_subscript(self, node: Subscript) -> List["TypeInfo"]:
         slice = node.slice
