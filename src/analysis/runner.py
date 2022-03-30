@@ -3,6 +3,7 @@ import logging
 from typing import List
 from typing import Dict
 from typing import Tuple
+from datetime import datetime
 
 from .reporting import ReportingService
 from .n_gram_model import NGramModel
@@ -36,18 +37,27 @@ class AnalysisRunner():
 
         self._typed_count_model: TokenCountModel = None
         self._untyped_count_model: TokenCountModel = None
+        self._current_saving_folder: str = None
     
     def start(self):
         """
         Starts the analysis run. Creates a folder that contains the different reports
         """
+        result_folder: str = self._generate_result_folder_path()
+        self._current_saving_folder = result_folder
+        os.mkdir(self._current_saving_folder)
+
         if self._maybe_create_count_models():
             if self.config.untyped:
                 print("Starting untyped analysis run...")
+                self._current_saving_folder = os.path.join(result_folder, "untyped")
+                os.mkdir(self._current_saving_folder)
                 self.do_analysis_run(self._untyped_count_model)
 
             if self.config.typed:
                 print("Starting typed analysis run...")
+                self._current_saving_folder = os.path.join(result_folder, "typed")
+                os.mkdir(self._current_saving_folder)
                 self.do_analysis_run(self._typed_count_model)
         else:
             print("Starting typed analysis run...")
@@ -70,7 +80,7 @@ class AnalysisRunner():
                         sequence_length,
                         min_token_count
                     )
-                    report: ReportingService = AnalysisRunner.create_report(token_count_model, gram_model)
+                    report: ReportingService = AnalysisRunner.create_report(token_count_model, gram_model, self.reporting_size)
                     self.save_report(report)
 
     def save_report(self, report: ReportingService):
@@ -85,8 +95,20 @@ class AnalysisRunner():
             report.language_model.max_sequence_length,
             report.language_model.minimum_token_occurrence
         )
-        report.save_to_file(self.config.analysis_result_folder, file_name)
+        report.save_to_file(self._current_saving_folder, file_name)
         print("Saved report as {}.txt".format(file_name))
+
+    def _generate_result_folder_path(self, index=0) -> str:
+        result_folder_name: str = "Pygram Analysis - {}".format(datetime.now().strftime("%d.%m %H:%M"))
+
+        if index > 0:
+            result_folder_name += " ({})".format(str(index))
+
+        result_folder: str = os.path.join(self.config.analysis_result_folder, result_folder_name)
+        if os.path.exists(result_folder):
+            index += 1
+            return self._generate_result_folder_path(index=index)
+        return result_folder
 
     def _maybe_create_count_models(self) -> bool:
         """
@@ -98,13 +120,13 @@ class AnalysisRunner():
         if self.config.untyped:
             project_name, sequences = AnalysisRunner.tokenize_project(self.project_path, False)
             file_name: str = "{}_count_model_untyped.json".format(project_name)
-            save_path: str = os.path.join(self.config.analysis_result_folder, file_name)
+            save_path: str = os.path.join(self._current_saving_folder, file_name)
             self._untyped_count_model = AnalysisRunner.create_and_save_count_model(project_name, sequences, save_path)
         
         if self.config.typed:
             project_name, sequences = AnalysisRunner.tokenize_project(self.project_path, True)
             file_name: str = "{}_count_model_typed.json".format(project_name)
-            save_path: str = os.path.join(self.config.analysis_result_folder, file_name)
+            save_path: str = os.path.join(self._current_saving_folder, file_name)
             self._typed_count_model = AnalysisRunner.create_and_save_count_model(project_name, sequences, save_path)
         
         return True
