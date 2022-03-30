@@ -172,7 +172,7 @@ class AnalysisRunner():
     @staticmethod
     def create_report(token_count_model: TokenCountModel, gram_model: NGramModel, reporting_size: int) -> ReportingService:
         print("Generating Report...")
-        report: ReportingService = ReportingService(gram_model, token_count_model, reporting_size)
+        report: ReportingService = ReportingService(gram_model, token_count_model.get_sequence_dict(), reporting_size)
         report.generate_report()
         print("Finished")
         return report

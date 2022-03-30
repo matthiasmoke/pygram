@@ -1,29 +1,19 @@
 import argparse
 import os
 import sys
-from .type_retrieval.preprocessed_type_caches import TypeCache
-from .type_retrieval.project_preprocessor import TypePreprocessor
+from .config import Config
 from .analysis.token_count_model import TokenCountModel
 from .analysis.n_gram_model import NGramModel
-from .utils import Utils
-from .tokenization.tokenizer import Tokenizer
-from .tokenization.type_tokenizer import TypeTokenizer
 from .analysis.reporting import ReportingService
-
-from typing import Dict, Tuple, List
+from .analysis.runner import AnalysisRunner
 
 class Pygram:
 
     def __init__(self) -> None:
-        self.use_type_info: bool = False
-        self.gram_size: int = 3
-        self.sequence_length: int = 6
-        self.minimum_token_count: int = 3
-        self.reporting_size: int = 10
-        self.count_model_path: os.path = None
+        self.config: Config = Config()
+        self.count_model_path: str = None
         self.token_count_model: TokenCountModel = None
         self.project_path: str = None
-        self.save_token_line_numbers = True
 
     @staticmethod
     def _create_parser() -> argparse.ArgumentParser:
@@ -32,6 +22,7 @@ class Pygram:
         parser.add_argument("-d", help="Analyse directory")
         parser.add_argument("-t", action="store_true", help="This flag enables processing of type annotations. The type information added to the tokens")
         parser.add_argument("-o", help="Set a minimum token occurrence. Standard value is 2")
+        parser.add_argument("-c", help="Specify a config file for Pygram")
         parser.add_argument("--load-model", help="Load model from file (.json)")
         parser.add_argument("--save-model", nargs=2, help="Save the intermediate token count model to a file")
         parser.add_argument("--gram-size", help="Set gram size to perform analysis with. Standard value is 3")
@@ -76,59 +67,19 @@ class Pygram:
         self.count_model_path = os.path.join(path, name + ".json")
         return True
     
-    def _tokenize_project(self, directory: str) -> Tuple[str, Dict]:
-        sequence_list: Dict[str, List[Tuple[str, int]]] = {}
-        python_files = Utils.get_all_python_files_in_directory(directory)
-        counter: int = len(python_files)
-        directory_name = os.path.basename(directory)
-        type_cache: TypeCache = None
-        print("Detected {} Python files".format(counter))
-
-        if self.use_type_info:
-            print("Preprocessing the project for types...")
-            preprocessor: TypePreprocessor = TypePreprocessor(directory)
-            type_cache: TypeCache = preprocessor.process_project()
-
-        for (index, file) in enumerate(python_files):
-            print("[{}/{}] Processing \"{}\"".format(index + 1, counter, file))
-            path: os.path = os.path.abspath(file)
-
-            if os.path.isfile(path):
-                path_within_project: str = Utils.get_only_project_path(directory, path)
-                module_path: str = Utils.generate_dotted_module_path(path_within_project)
-
-                if (self.use_type_info):
-                    tokenizer: TypeTokenizer = TypeTokenizer(path, module_path, type_cache)
-                else:
-                    tokenizer: Tokenizer = Tokenizer(path, module_path)
-                file_tokens: List[Tuple(str, int)] = tokenizer.process_file()
-                sequence_list[path_within_project] = file_tokens
-        return directory_name, sequence_list
-    
     def _analyze_project(self):
         if self.project_path is not None:
-            project_name, sequence_list = self._tokenize_project(self.project_path)
-            print("Building token count model...")
-            self.token_count_model = TokenCountModel(sequence_list, name=project_name, save_line_numbers=self.save_token_line_numbers)
-            self.token_count_model.build()
-            print("Finished")
-            if self.count_model_path:
-                self.token_count_model.save_to_file(self.count_model_path)
-                print("Saved token count model to: {}".format(self.count_model_path))
+            project_name, sequence_list = AnalysisRunner.tokenize_project(self.project_path)
+            self.token_count_model = AnalysisRunner.create_and_save_count_model(project_name, sequence_list, self.count_model_path)
         
         if self.token_count_model is not None:
-            print("Building n-gram model...")
-            ngram_model: NGramModel = NGramModel(
-                self.token_count_model,
-                self.gram_size,
-                self.sequence_length,
-                self.minimum_token_count,
-            )
-            ngram_model.build()
-            print("Finished")
-            print("Generating Report...")
-            report: ReportingService = ReportingService(ngram_model, self.token_count_model.get_sequence_dict(), self.reporting_size)
-            report.generate_report()
+            ngram_model: NGramModel = AnalysisRunner.build_n_gram_model(
+                token_count_model=self.token_count_model,
+                gram_size=self.config.gram_size,
+                min_token_count=self.config.minimum_token_occurrence,
+                sequence_length=self.config.sequence_length
+                )
+            report: ReportingService = AnalysisRunner.create_report(self.token_count_model, ngram_model, self.config.reporting_size)
             print(str(report))
 
 
@@ -142,16 +93,16 @@ class Pygram:
                 self.use_type_info = True
             
             if arguments.o is not None:
-                self.minimum_token_count = int(arguments.o)
+                self.config.minimum_token_occurrence = int(arguments.o)
             
             if arguments.gram_size is not None:
-                self.gram_size = int(arguments.gram_size)
+                self.config.gram_size = int(arguments.gram_size)
             
             if arguments.sequence_length is not None:
-                self.sequence_length = arguments.sequence_length
+                self.config.sequence_length = arguments.sequence_length
             
             if arguments.reporting_size is not None:
-                self.reporting_size = arguments.reporting_size
+                self.config.reporting_size = arguments.reporting_size
             
             if arguments.load_model is not None:
                 self.token_count_model = Pygram._load_token_count_model_from_file(arguments.load_model)
@@ -164,7 +115,7 @@ class Pygram:
                     return
 
             if arguments.deactivate_token_line_numbers:
-                self.save_token_line_numbers = False
+                self.config.save_token_line_numbers = False
 
             if arguments.d is not None:
                 if self.token_count_model is not None:
@@ -172,4 +123,16 @@ class Pygram:
                 else:
                     self.project_path = arguments.d
             
-            self._analyze_project()
+            if arguments.c is not None:
+                self.config = Config.load_from_file(arguments.c)
+            
+            if self.config.do_analysis_run:
+                analysis_runner: AnalysisRunner = AnalysisRunner(
+                    self.token_count_model,
+                    self.config.analysis_run,
+                    self.config.reporting_size,
+                    self.project_path
+                    )
+                analysis_runner.start()
+            else:
+                self._analyze_project()
