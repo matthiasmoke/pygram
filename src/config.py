@@ -18,7 +18,6 @@ CONFIG_OPTS: List[str] = [
 
 RUNNER_CONFIG_OPTS: List[str] = [
     "analysis_result_folder",
-    "token_count_model_name",
     "report_name_prefix",
     "gram_sizes",
     "sequence_lengths",
@@ -37,7 +36,6 @@ class RunnerConfig():
     typed: bool,
     untyped: bool,
     analysis_result_folder: str,
-    token_count_model_name: str
     ) -> None:
         self.sequence_lengths: List[int] = sequence_lengths
         self.gram_sizes: List[int] = gram_sizes
@@ -46,7 +44,6 @@ class RunnerConfig():
         self.typed: bool = typed
         self.untyped: bool = untyped
         self.analysis_result_folder: str = analysis_result_folder
-        token_count_model_name: str = token_count_model_name
     
 
     @staticmethod
@@ -60,21 +57,19 @@ class RunnerConfig():
     def from_json(json_config) -> "RunnerConfig":
         if RunnerConfig.config_file_is_valid(json_config):
             new_config: RunnerConfig = RunnerConfig(
-                sequence_lengths=json_config.sequence_lengths,
-                gram_sizes=json_config.gram_sizes,
-                report_name_prefix=json_config.report_name_prefix,
-                typed=json_config.typed,
-                untyped=json_config.untyped,
-                minimum_token_occurrences=json_config.minimum_token_occurrences,
-                analysis_result_folder=json_config.analysis_result_folder,
-                token_count_model_name=json_config.token_count_model_name
+                sequence_lengths=json_config["sequence_lengths"],
+                gram_sizes=json_config["gram_sizes"],
+                report_name_prefix=json_config["report_name_prefix"],
+                typed=json_config["typed"],
+                untyped=json_config["untyped"],
+                minimum_token_occurrences=json_config["minimum_token_occurrences"],
+                analysis_result_folder=json_config["analysis_result_folder"]
             )
             return new_config
 
 class Config:
 
     def __init__(self, 
-    token_count_model_name: str,
     use_type_info: bool = False,
     gram_size: int = 3,
     sequence_length: int = 3,
@@ -89,7 +84,6 @@ class Config:
         self.sequence_length: int = sequence_length
         self.minimum_token_occurrence: int = minimum_token_occurrence
         self.reporting_size: int = reporting_size
-        self.token_count_model_name: str = token_count_model_name
         self.save_token_line_numbers: bool = save_token_line_numbers
         self.do_analysis_run: bool = do_analysis_run
         self.analysis_run: RunnerConfig = analysis_run
@@ -103,16 +97,14 @@ class Config:
                 if Config.config_file_is_valid(config):
                     runner_config: RunnerConfig = None
                     if "analysis_run" in config:
-                        runner_config = RunnerConfig.from_json(config.analysis_run) 
+                        runner_config = RunnerConfig.from_json(config["analysis_run"]) 
                     new_config = Config(
-                        use_type_info=config.use_type_info,
-                        gram_size=config.gram_size,
-                        sequence_length=config.sequence_length,
-                        minimum_token_occurrence=config.minimum_token_occurrence,
-                        reporting_size=config.reporting_size,
-                        path_to_token_count_model=config.path_to_token_count_model,
-                        token_count_model_name=config.token_count_model_name,
-                        do_analysis_run=config.do_analysis_run,
+                        use_type_info=config["use_type_info"],
+                        gram_size=config["gram_size"],
+                        sequence_length=config["sequence_length"],
+                        minimum_token_occurrence=config["minimum_token_occurrence"],
+                        reporting_size=config["reporting_size"],
+                        do_analysis_run=config["do_analysis_run"],
                         analysis_run=runner_config
                     )
                     print("Successfully loaded config file")

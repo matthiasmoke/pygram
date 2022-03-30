@@ -15,7 +15,7 @@ class TokenCountModel():
         longest_sequence_length=0,
         save_line_numbers: bool = True
     ):
-        self.token_sequences: Dict[List[Tuple[str, int]]] = token_sequences
+        self.token_sequences: Dict[str, List[Tuple[str, int]]] = token_sequences
         self.count_model: Dict[str, int] = count_model
         self.single_tokens: Dict[str, int] = single_tokens
         self.name: str = name
@@ -119,7 +119,7 @@ class TokenCountModel():
 
         return output
 
-    def get_sequence_dict(self) -> Dict[List[Tuple[str, int]]]:
+    def get_sequence_dict(self) -> Dict[str, List[Tuple[str, int]]]:
         return self.token_sequences
     
     def get_token_count(self, token) -> int:
