@@ -58,7 +58,7 @@ class TokenCountModel():
         return None
     
 
-    def save_to_file(self, path) -> None:
+    def save_to_file(self, path: str) -> None:
         saved_sequences = self.token_sequences
         if not self.save_line_numbers:
             converted_token_sequences: Dict[str, List[List[str]]] = {}

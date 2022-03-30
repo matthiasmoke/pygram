@@ -37,7 +37,7 @@ class Pygram:
         parser.add_argument("--gram-size", help="Set gram size to perform analysis with. Standard value is 3")
         parser.add_argument("--sequence-length", help="Set sequence length for the sequences used in the n-gram model. Standard value is 6")
         parser.add_argument("--reporting-size", help="Set reporting size. Standard value is 10")
-        parser.add_argument("--deactivate-token-line-numbers", help="Removes the line numbers for the tokens. Also in the saved token count model", action="store_true")
+        parser.add_argument("--deactivate-token-line-numbers", help="Removes the line numbers for the tokens. Also in the saved token count model. This option makes the count model invalid for the analysis", action="store_true")
 
         return parser
     
@@ -107,10 +107,8 @@ class Pygram:
     
     def _analyze_project(self):
         if self.project_path is not None:
-            print("Starting to tokenize project...")
             project_name, sequence_list = self._tokenize_project(self.project_path)
-            print("Finished")
-            print("Building intermediate count model...")
+            print("Building token count model...")
             self.token_count_model = TokenCountModel(sequence_list, name=project_name, save_line_numbers=self.save_token_line_numbers)
             self.token_count_model.build()
             print("Finished")
