@@ -69,7 +69,7 @@ class Pygram:
     
     def _analyze_project(self):
         if self.project_path is not None:
-            project_name, sequence_list = AnalysisRunner.tokenize_project(self.project_path)
+            project_name, sequence_list = AnalysisRunner.tokenize_project(self.project_path, self.config.use_type_info)
             self.token_count_model = AnalysisRunner.create_and_save_count_model(project_name, sequence_list, self.count_model_path)
         
         if self.token_count_model is not None:
