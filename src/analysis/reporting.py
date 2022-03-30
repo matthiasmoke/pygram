@@ -1,13 +1,23 @@
+import logging
 from decimal import Decimal
-from typing import Dict, List, Tuple
+import os
+from typing import Tuple
+from typing import Dict
+from typing import List
 from itertools import islice
-from .utils import Utils
-from .NGramModel import NGramModel
+from ..utils import Utils
+from .n_gram_model import NGramModel
 
+logger = logging.getLogger("main")
 
 class ReportingService():
 
-    def __init__(self, language_model: NGramModel, token_sequences: Dict, reporting_size: int) -> None:
+    def __init__(
+        self,
+        language_model: NGramModel,
+        token_sequences: Dict,
+        reporting_size: int
+    ) -> None:
         self.language_model: NGramModel = language_model
         self.reporting_size: int = reporting_size
         self.token_sequences: Dict = self._convert_token_sequences(token_sequences)
@@ -45,6 +55,17 @@ class ReportingService():
         
         self.report = report
         return report
+    
+    def save_to_file(self, destination: str, name: str) -> None:
+        if os.path.isdir(destination):
+            report_file = os.path.join(destination, "{}.txt".format(name))
+
+            with open(report_file, "w") as outputfile:
+                outputfile.write(str(self))
+                outputfile.close
+        else:
+            logger.error("Could not save report to destionation {}. Not a directory".format(destination))
+            raise RuntimeError("Could not save report!")
 
     
     def _get_corresponding_modules(self, sub_sequence: str) -> List[Tuple[str, int, int]]:

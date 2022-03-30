@@ -1,4 +1,4 @@
-from src.Pygram import Pygram
+from src.pygram import Pygram
 from src.log import setup_logger
 
 if __name__ == '__main__':

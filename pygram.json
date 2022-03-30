@@ -1,0 +1,19 @@
+{
+    "use_type_info": false,
+    "gram_size": 3,
+    "sequence_length": 3,
+    "minimum_token_occurrence": 3,
+    "reporting_size": 10,
+    "token_count_model_name": "",
+    "save_token_line_numbers": true,
+    "do_analysis_run": true,
+    "analysis_run": {
+        "analysis_result_folder": "",
+        "gram_sizes": [ 2, 3, 4 ],
+        "sequence_lengths": [4, 5, 6],
+        "minimum_token_occurrences": [ 3 ],
+        "report_name_prefix": "pytest",
+        "typed": true,
+        "untyped": true
+    }
+}

@@ -1,17 +1,27 @@
 
 import json
-from typing import Dict, List, Tuple
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 class TokenCountModel():
     
-    def __init__(self, token_sequences={}, name="", count_model={}, single_tokens={}, shortest_sequence_length=0, longest_sequence_length=0, save_line_numbers: bool = True):
-        self.token_sequences: Dict = token_sequences
-        self.count_model: Dict = count_model
+    def __init__(self, 
+        token_sequences={},
+        name="",
+        count_model={},
+        single_tokens={},
+        shortest_sequence_length=0,
+        longest_sequence_length=0,
+        save_line_numbers: bool = True
+    ):
+        self.token_sequences: Dict[str, List[Tuple[str, int]]] = token_sequences
+        self.count_model: Dict[str, int] = count_model
         self.single_tokens: Dict[str, int] = single_tokens
         self.name: str = name
         self.shortest_sequence_length: int = shortest_sequence_length
         self.longest_sequence_length: int = longest_sequence_length
-        self.number_of_single_tokens_cache: int = None
+        self._number_of_single_tokens_cache: int = None
         self.save_line_numbers: bool = save_line_numbers
 
     @staticmethod
@@ -48,8 +58,7 @@ class TokenCountModel():
         return None
     
 
-    def save_to_file(self, path) -> None:
-
+    def save_to_file(self, path: str) -> None:
         saved_sequences = self.token_sequences
         if not self.save_line_numbers:
             converted_token_sequences: Dict[str, List[List[str]]] = {}
@@ -92,7 +101,7 @@ class TokenCountModel():
                         token_sub_sequence += sequence[count][0]
                         self._count_token(token_sub_sequence)
 
-    def get_sequence_list_without_meta_data(self) -> List:
+    def get_sequence_list_without_meta_data(self) -> List[List[str]]:
         """
         Returns sequence list without any module or line number information
         """
@@ -110,7 +119,7 @@ class TokenCountModel():
 
         return output
 
-    def get_sequence_dict(self) -> Dict:
+    def get_sequence_dict(self) -> Dict[str, List[Tuple[str, int]]]:
         return self.token_sequences
     
     def get_token_count(self, token) -> int:
@@ -119,16 +128,16 @@ class TokenCountModel():
         """
         return self.count_model[token]
     
-    def get_number_of_single_tokens(self, minimum_token_count: int):
-        if self.number_of_single_tokens_cache is not None:
-            return self.number_of_single_tokens_cache
+    def get_number_of_single_tokens(self, minimum_token_count: int) -> int:
+        if self._number_of_single_tokens_cache is not None:
+            return self._number_of_single_tokens_cache
         
         number_of_single_tokens: int = 0
         for token, count in self.single_tokens.items():
             if count >= minimum_token_count:
                 number_of_single_tokens += count
         
-        self.number_of_single_tokens_cache = number_of_single_tokens
+        self._number_of_single_tokens_cache = number_of_single_tokens
         return number_of_single_tokens
 
     def _count_token(self, token_sub_sequence) -> None:
