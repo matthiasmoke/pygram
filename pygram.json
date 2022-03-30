@@ -4,10 +4,7 @@
     "sequence_length": 3,
     "minimum_token_occurrence": 3,
     "reporting_size": 10,
-    "path_to_token_count_model": "",
-    "save_path_for_token_count_model": "",
     "token_count_model_name": "",
-    "project_path": "",
     "save_token_line_numbers": true,
     "do_analysis_run": false,
     "analysis_run": {
