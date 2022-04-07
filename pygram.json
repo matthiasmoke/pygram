@@ -12,7 +12,7 @@
         "gram_sizes": [ 2, 3, 4, 5, 6 ],
         "sequence_lengths": [4, 5, 6, 7 ],
         "minimum_token_occurrences": [ 3 ],
-        "report_name_prefix": "pytest",
+        "report_name_prefix": "",
         "typed": true,
         "untyped": true
     }
