@@ -9,8 +9,8 @@
     "do_analysis_run": true,
     "analysis_run": {
         "analysis_result_folder": "",
-        "gram_sizes": [ 2, 3, 4 ],
-        "sequence_lengths": [4, 5, 6],
+        "gram_sizes": [ 2, 3, 4, 5, 6 ],
+        "sequence_lengths": [4, 5, 6, 7 ],
         "minimum_token_occurrences": [ 3 ],
         "report_name_prefix": "pytest",
         "typed": true,
