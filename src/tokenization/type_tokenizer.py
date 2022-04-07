@@ -110,7 +110,10 @@ class TypeTokenizer(Tokenizer):
         elif isinstance(node.func, Call):
             self._process_call(node.func, tokens)
         elif isinstance(node.func, Subscript):
-            function_name = node.func.value.id
+            if hasattr(node.func.value, "id"):
+                function_name = node.func.value.id
+            elif hasattr(node.func.value, "attr"):
+                function_name = node.func.value.attr
             self._process_standalone_function(function_name, tokens, node)
         else:
             logger.error("Unable to determine method name in module {} in line {}"

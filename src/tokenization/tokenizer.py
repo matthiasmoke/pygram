@@ -347,7 +347,10 @@ class Tokenizer:
             if isinstance(attribute.value, Call):
                 self._process_call(attribute.value, tokens)
         elif isinstance(node.func, Subscript):
-            function_name = node.func.value.id
+            if hasattr(node.func.value, "id"):
+                function_name = node.func.value.id
+            elif hasattr(node.func.value, "attr"):
+                function_name = node.func.value.attr
             token = self._construct_call_token(function_name)
         elif isinstance(node.func, Call):
             self._process_call(node.func, tokens)

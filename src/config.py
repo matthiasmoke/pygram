@@ -72,7 +72,7 @@ class Config:
     def __init__(self, 
     use_type_info: bool = False,
     gram_size: int = 3,
-    sequence_length: int = 3,
+    sequence_length: int = 4,
     minimum_token_occurrence: int = 3,
     reporting_size: int = 10,
     save_token_line_numbers: bool = True,

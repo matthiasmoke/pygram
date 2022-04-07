@@ -45,7 +45,7 @@ class Utils:
         """
         Returns a list of all Python files in given directory and subdirectories
         """
-        output: List = []
+        output: List[str] = []
 
         if (os.path.isdir(path)):
             for root, dirs, files in os.walk(path):
