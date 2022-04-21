@@ -18,7 +18,7 @@ class NGramModel():
         self.gram_size: int = gram_size
         self.max_sequence_length: int = max_sequence_length
         self.minimum_token_occurrence: int = minimum_token_occurrence
-        self.model: Dict = {}
+        self.model: Dict[str, Decimal] = {}
     
 
     def build(self):

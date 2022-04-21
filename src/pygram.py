@@ -90,7 +90,7 @@ class Pygram:
             arguments = self._create_parser().parse_args()
 
             if arguments.t:
-                self.use_type_info = True
+                self.config.use_type_info = True
             
             if arguments.o is not None:
                 self.config.minimum_token_occurrence = int(arguments.o)

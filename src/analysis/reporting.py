@@ -20,8 +20,8 @@ class ReportingService():
     ) -> None:
         self.language_model: NGramModel = language_model
         self.reporting_size: int = reporting_size
-        self.token_sequences: Dict = self._convert_token_sequences(token_sequences)
-        self.report = []
+        self.token_sequences: Dict[str, List[Tuple[str, int]]] = self._convert_token_sequences(token_sequences)
+        self.report: List[Tuple[str, Decimal, List[str]]] = []
     
     def __str__(self) -> str:
         if len(self.report) == 0:
@@ -45,7 +45,11 @@ class ReportingService():
         return output
 
     def generate_report(self) -> List[Tuple[str, Decimal, List[str]]]:
-        report = []
+        """
+        Retruns a list that contains report entries in the form of a tuple in the form of 
+        (sequence string, probability, corresponding modules).
+        """
+        report: List[Tuple[str, Decimal, List[str]]] = []
         extracted_sequences: List[Tuple[str, Decimal]] = self._extract_sequences_with_lowest_probability()
 
         for value in extracted_sequences:
@@ -98,7 +102,7 @@ class ReportingService():
     def _sort_by_probability(self, probability_dict: Dict) -> Dict:
         return {k: v for k, v in sorted(probability_dict.items(), key=lambda item: item[1])}
 
-    def _convert_token_sequences(self, token_sequences: Dict) -> Dict:
+    def _convert_token_sequences(self, token_sequences: Dict) -> Dict[str, List[Tuple[str, int]]]:
         """
         Converts a Dict which contains the sequences as List of tokens to a Dict
         which contains tuples with the sequences as strings and the starting line number
