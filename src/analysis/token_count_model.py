@@ -7,17 +7,27 @@ from typing import Tuple
 class TokenCountModel():
     
     def __init__(self, 
-        token_sequences={},
+        token_sequences=None,
         name="",
-        count_model={},
-        single_tokens={},
+        count_model=None,
+        single_tokens=None,
         shortest_sequence_length=0,
         longest_sequence_length=0,
         save_line_numbers: bool = True
     ):
+
+        if count_model is None:
+            self.count_model: Dict[str, int] = {}
+        else:
+            self.count_model: Dict[str, int] = count_model
+
+        if single_tokens is None:
+            self.single_tokens: Dict[str, int] = {}
+        else:
+            self.single_tokens: Dict[str, int] = single_tokens
+        
         self.token_sequences: Dict[str, List[Tuple[str, int]]] = token_sequences
-        self.count_model: Dict[str, int] = count_model
-        self.single_tokens: Dict[str, int] = single_tokens
+
         self.name: str = name
         self.shortest_sequence_length: int = shortest_sequence_length
         self.longest_sequence_length: int = longest_sequence_length
