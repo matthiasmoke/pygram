@@ -1,4 +1,3 @@
-from decimal import Decimal
 import os
 from typing import List, Tuple
 from src.utils import Utils
@@ -27,12 +26,14 @@ def extract_parameter_info(line: str) -> List[int]:
             parameters.append(int(line[i]))
     return parameters
 
-def extract_match_info(file_content: List[str]) -> List[Tuple[str, int]]:
+def extract_match_info(file_content: List[str]) -> List[Tuple[str, int, str]]:
     """
-    Extracts the line number and module info of every sequence in the report
+    Extracts the line number, module info and string of every sequence in the report
     """
     output: List[Tuple[str, int]] = []
-    for line in file_content:
+
+    for index, line in enumerate(file_content):
+
         if len(line) > 2 and line[-2] == "]":
             line = line.replace("\t\t", "")
             line_parts = line.rsplit("[", 1)
@@ -60,8 +61,8 @@ if __name__ == "__main__":
 
     matching_result: str = "-------------------- Pygram Report Matchings --------------------"
 
-    result_folder: str = "/home/matthias/BachelorThesis/Analysis/Pygram_Analysis_Pytest_7.1.1- 07.04"
-    match_result_file: str = os.path.join(result_folder, "report_matching.txt")
+    result_folder: str = "/home/matthias/BachelorThesis/Analysis/pygram_1.1.3_21.04"
+    match_result_file: str = os.path.join(result_folder, "pygram_report_matching.txt")
 
     typed_report_folder: str = os.path.join(result_folder, "typed")
     untyped_report_folder: str = os.path.join(result_folder, "untyped")
