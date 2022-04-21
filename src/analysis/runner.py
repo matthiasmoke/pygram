@@ -74,14 +74,16 @@ class AnalysisRunner():
         for min_token_count in min_token_counts:
             for gram_size in gram_sizes:
                 for sequence_length in sequence_lengths:
-                    gram_model: NGramModel = AnalysisRunner.build_n_gram_model(
-                        token_count_model,
-                        gram_size, 
-                        sequence_length,
-                        min_token_count
-                    )
-                    report: ReportingService = AnalysisRunner.create_report(token_count_model, gram_model, self.reporting_size)
-                    self.save_report(report)
+                    
+                    if sequence_length >= gram_size:
+                        gram_model: NGramModel = AnalysisRunner.build_n_gram_model(
+                            token_count_model,
+                            gram_size, 
+                            sequence_length,
+                            min_token_count
+                        )
+                        report: ReportingService = AnalysisRunner.create_report(token_count_model, gram_model, self.reporting_size)
+                        self.save_report(report)
 
     def save_report(self, report: ReportingService):
         prefix = self.config.report_name_prefix
