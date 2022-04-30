@@ -2,6 +2,7 @@ import os
 from typing import List, Tuple
 from src.utils import Utils
 
+REPORT_SEPARATOR: str = "-------------------------------------------------------"
 
 def get_reports_in_folder(path: str) -> List[str]:
     output: List[str] = []
@@ -26,23 +27,43 @@ def extract_parameter_info(line: str) -> List[int]:
             parameters.append(int(line[i]))
     return parameters
 
+def extract_line_number_from_text(line: str) -> str:
+    """
+    Extracts the first line number from line with module info
+    """
+    line = line.replace("\t\t", "")
+    line_number_part = line.rsplit("[", 1)[1]
+
+    if "," in line_number_part:
+        line_number_info = line_number_part.rsplit(",", 1)[0]
+    else:
+        line_number_info = line_number_part.replace("]\n", "")
+    
+    return line_number_info
+
+
 def extract_match_info(file_content: List[str]) -> List[Tuple[str, int, str]]:
     """
     Extracts the line number, module info and string of every sequence in the report
     """
     output: List[Tuple[str, int]] = []
+    new_sequence_entry = False
 
     for index, line in enumerate(file_content):
 
-        if len(line) > 2 and line[-2] == "]":
+        if REPORT_SEPARATOR in line:
+            new_sequence_entry = True
+
+        if len(line) > 2 and line[-2] == "]" and new_sequence_entry:
             line = line.replace("\t\t", "")
             line_parts = line.rsplit("[", 1)
 
             module = line_parts[0].replace(" in line(s): ", "")
-            line_number = line_parts[1].replace("]\n", "")
+            line_number = extract_line_number_from_text(line)
 
             print("Extracted ({}, {})".format(module, line_number))
             output.append((module, line_number))
+            new_sequence_entry = False
     return output
 
 
@@ -61,8 +82,8 @@ if __name__ == "__main__":
 
     matching_result: str = "-------------------- Pygram Report Matchings --------------------"
 
-    result_folder: str = "/home/matthias/BachelorThesis/Analysis/pygram_1.1.3_21.04"
-    match_result_file: str = os.path.join(result_folder, "pygram_report_matching.txt")
+    result_folder: str = "/home/matthias/BachelorThesis/Analysis/Percentage_Reports/pynguin_0.19.0_21.04"
+    match_result_file: str = os.path.join(result_folder, "pynguin_report_matching.txt")
 
     typed_report_folder: str = os.path.join(result_folder, "typed")
     untyped_report_folder: str = os.path.join(result_folder, "untyped")
