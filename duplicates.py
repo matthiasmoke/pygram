@@ -6,6 +6,7 @@ from typing import Dict
 from src.utils import Utils
 
 function_names: Dict[str, int] = {}
+function_counter: int = 0
 
 def analyse_file(filepath: str):
     tree = None
@@ -21,8 +22,9 @@ def analyse_file(filepath: str):
                 analyse_class(node)
 
 def process_function(function_def: FunctionDef):
-    global function_names
+    global function_names, function_counter
     name: str = function_def.name
+    function_counter += 1
 
     if function_names.get(name, None) is None:
         function_names[name] = 0
@@ -42,13 +44,19 @@ if __name__ == "__main__":
 
     for file in files:
         analyse_file(file)
-    
-    output = "Duplicate functions:\n"
 
+    duplicate_counter: int = 0
+    function_output: str = ""
     for key, value in function_names.items():
         if value > 1:
-            output += "\t - {}: {}\n".format(key, str(value))
+
+            if not key.startswith("__"):
+                duplicate_counter += value
+            function_output += "\t - {}: {}\n".format(key, str(value))
     
+    output: str = "Total number of functions in the project: {}\n".format(function_counter)
+    output += "Duplicate functions (total: {}):\n".format(duplicate_counter)
+    output += function_output
     print(output)
 
 
