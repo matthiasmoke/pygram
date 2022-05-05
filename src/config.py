@@ -71,7 +71,7 @@ class Config:
 
     def __init__(self, 
     use_type_info: bool = False,
-    gram_size: int = 3,
+    gram_size: int = 4,
     sequence_length: int = 4,
     minimum_token_occurrence: int = 3,
     reporting_size: int = 10,

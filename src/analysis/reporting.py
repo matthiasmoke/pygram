@@ -10,29 +10,30 @@ from .n_gram_model import NGramModel
 
 logger = logging.getLogger("main")
 
+
 class ReportingService():
 
     def __init__(
-        self,
-        language_model: NGramModel,
-        token_sequences: Dict,
-        reporting_size: int
+            self,
+            language_model: NGramModel,
+            token_sequences: Dict,
+            reporting_size: int
     ) -> None:
         self.language_model: NGramModel = language_model
         self.reporting_size: int = reporting_size
         self.token_sequences: Dict[str, List[Tuple[str, int]]] = self._convert_token_sequences(token_sequences)
         self.report: List[Tuple[str, Decimal, List[str]]] = []
-    
+
     def __str__(self) -> str:
         if len(self.report) == 0:
             return "Report is empty"
-        
+
         output = "-------------------- Pygram Report --------------------\n"
         output += "Gram Size: {}, Sequence Length: {}, Minimum Token Occurrence: {}\n".format(
             self.language_model.gram_size,
             self.language_model.max_sequence_length,
             self.language_model.minimum_token_occurrence
-            )
+        )
         output += "-------------------------------------------------------\n\n"
         for entry in self.report:
             output += entry[0]
@@ -56,10 +57,10 @@ class ReportingService():
             corresponding_modules = self._get_corresponding_modules(value[0])
             report_entry = (value[0], value[1], corresponding_modules)
             report.append(report_entry)
-        
+
         self.report = report
         return report
-    
+
     def save_to_file(self, destination: str, name: str) -> None:
         if os.path.isdir(destination):
             report_file = os.path.join(destination, "{}.txt".format(name))
@@ -71,7 +72,6 @@ class ReportingService():
             logger.error("Could not save report to destionation {}. Not a directory".format(destination))
             raise RuntimeError("Could not save report!")
 
-    
     def _get_corresponding_modules(self, sub_sequence: str) -> List[Tuple[str, int, int]]:
         """
         Returns the modules in which a sequence occurs including occurrences and string line number.
@@ -92,13 +92,23 @@ class ReportingService():
         Sorts the dict of sequences by probability and returns the sequences with the lowest probability
         """
         sorted_by_probability: Dict = self._sort_by_probability(self.language_model.model)
-        
-        if (len(sorted_by_probability) <= self.reporting_size):
+        first_key = next(iter(sorted_by_probability))
+        lowest_prob = sorted_by_probability[first_key]
+        counter = 0
+        for key, value in sorted_by_probability.items():
+            if value == lowest_prob:
+                counter += 1
+            else:
+                break
+
+        if self.language_model.gram_size == self.language_model.max_sequence_length:
+            return list(islice(sorted_by_probability.items(), 30))
+
+        if len(sorted_by_probability) <= self.reporting_size:
             return list(sorted_by_probability.items())
         else:
             return list(islice(sorted_by_probability.items(), self.reporting_size))
 
-    
     def _sort_by_probability(self, probability_dict: Dict) -> Dict:
         return {k: v for k, v in sorted(probability_dict.items(), key=lambda item: item[1])}
 
@@ -118,7 +128,7 @@ class ReportingService():
                 output[key].append((sequence_string, starting_line_number))
 
         return output
-    
+
     def _get_sequence_string(self, sequence: List[Tuple[str, int]]) -> str:
         output: str = ""
         for token in sequence:
