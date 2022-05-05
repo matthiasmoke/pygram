@@ -3,6 +3,7 @@ from typing import Dict
 from typing import List
 
 from .token_count_model import TokenCountModel
+from ..utils import Utils
 
 
 class NGramModel():
@@ -19,6 +20,9 @@ class NGramModel():
         self.max_sequence_length: int = max_sequence_length
         self.minimum_token_occurrence: int = minimum_token_occurrence
         self.model: Dict[str, Decimal] = {}
+        self.sequences_with_duplicates: List = []
+
+        self.duplicate_function_names = Utils.get_list_of_duplicate_functions_in_project()
     
 
     def build(self):
@@ -34,6 +38,14 @@ class NGramModel():
             if sequence_string not in self.model:
                 probability: Decimal = self._calculate_sequence_probability(sequence)
                 self.model[sequence_string] = probability
+
+                for token in sequence:
+                    token_string = token
+                    if '.' in token:
+                        token_string = token.split(".")[-1]
+
+                    if token_string in self.duplicate_function_names:
+                        self.sequences_with_duplicates.append(sequence_string)
     
     def _sequence_contains_invalid_token(self, sequence: List[str]) -> bool:
         """

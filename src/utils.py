@@ -1,16 +1,18 @@
 import os
-from typing import List
+from typing import List, Dict
 import ast
 import builtins
 import types
 import string
 import random
-from _ast import Attribute, Name, Subscript, Tuple
+from _ast import Attribute, Name, Subscript, Tuple, ClassDef, FunctionDef, AsyncFunctionDef
+
 
 class Utils:
 
     def __init__(self) -> None:
         self.builtin_functions: List[str] = []
+        self.duplicate_project_functions: List[str] = []
     
 
     def is_not_a_builtin_function(self, name: str) -> bool:
@@ -139,4 +141,57 @@ class Utils:
             return name
         else:
             return "{}.{}".format(prefix, name)
+
+    @staticmethod
+    def analyse_file(filepath: str, function_names: Dict):
+        tree = None
+        if os.path.isfile(filepath):
+            with open(filepath, "r") as source:
+                tree = ast.parse(source.read())
+
+        if tree is not None:
+            for node in tree.body:
+                if isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef):
+                    Utils.process_function(node, function_names)
+                if isinstance(node, ClassDef):
+                    Utils.analyse_class(node, function_names)
+
+    @staticmethod
+    def process_function(function_def: FunctionDef, function_names: Dict):
+        name: str = function_def.name
+
+        if function_names.get(name, None) is None:
+            function_names[name] = 0
+
+        function_names[name] += 1
+
+    @staticmethod
+    def analyse_class(class_def: ClassDef, function_names):
+        for node in class_def.body:
+            if isinstance(node, FunctionDef) or isinstance(node, AsyncFunctionDef):
+                Utils.process_function(node, function_names)
+            elif isinstance(node, ClassDef):
+                Utils.analyse_class(node, function_names)
+
+    @staticmethod
+    def get_list_of_duplicate_functions_in_project() -> List[str]:
+        function_names: Dict[str, int] = {}
+        duplicates: List[str] = []
+        path_to_project: str = "/home/matthias/Projects/pynguin/pynguin"
+
+        project_files: List[str] = Utils.get_all_python_files_in_directory(path_to_project)
+
+        for python_file in project_files:
+            Utils.analyse_file(python_file, function_names)
+
+        for key, value in function_names.items():
+            if value > 1:
+                duplicates.append(key + "()")
+        duplicates.sort()
+
+        return duplicates
+
+
+
+        
 

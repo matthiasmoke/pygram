@@ -8,11 +8,11 @@
     "save_token_line_numbers": true,
     "do_analysis_run": true,
     "analysis_run": {
-        "analysis_result_folder": "",
+        "analysis_result_folder": "/home/matthias/BachelorThesis/Analysis",
         "gram_sizes": [ 2, 3, 4, 5, 6 ],
         "sequence_lengths": [4, 5, 6, 7 ],
         "minimum_token_occurrences": [ 3 ],
-        "report_name_prefix": "",
+        "report_name_prefix": "pynguin",
         "typed": true,
         "untyped": true
     }

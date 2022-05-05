@@ -22,6 +22,7 @@ class ReportingService():
         self.reporting_size: int = reporting_size
         self.token_sequences: Dict[str, List[Tuple[str, int]]] = self._convert_token_sequences(token_sequences)
         self.report: List[Tuple[str, Decimal, List[str]]] = []
+        self.sequences_with_duplicates: List[str] = []
     
     def __str__(self) -> str:
         if len(self.report) == 0:
@@ -42,6 +43,11 @@ class ReportingService():
             for key, starting_lines in entry[2].items():
                 output += "\t\t{} in line(s): {}\n".format(key, Utils.get_list_string(starting_lines))
             output += "\n-------------------------------------------------------\n\n"
+
+        for sequence in self.sequences_with_duplicates:
+            output += sequence + "\n"
+
+        output += "\nNo. of sequences that contain duplicates: {}".format(str(len(self.sequences_with_duplicates)))
         return output
 
     def generate_report(self) -> List[Tuple[str, Decimal, List[str]]]:
@@ -52,11 +58,17 @@ class ReportingService():
         report: List[Tuple[str, Decimal, List[str]]] = []
         extracted_sequences: List[Tuple[str, Decimal]] = self._extract_sequences_with_lowest_probability()
 
+        duplicate_sequences: List[str] = []
+
         for value in extracted_sequences:
             corresponding_modules = self._get_corresponding_modules(value[0])
             report_entry = (value[0], value[1], corresponding_modules)
             report.append(report_entry)
-        
+
+            if value[0] in self.language_model.sequences_with_duplicates:
+                duplicate_sequences.append(value[0])
+
+        self.sequences_with_duplicates = duplicate_sequences
         self.report = report
         return report
     
@@ -66,7 +78,7 @@ class ReportingService():
 
             with open(report_file, "w") as outputfile:
                 outputfile.write(str(self))
-                outputfile.close
+                outputfile.close()
         else:
             logger.error("Could not save report to destionation {}. Not a directory".format(destination))
             raise RuntimeError("Could not save report!")
