@@ -66,7 +66,7 @@ class ReportingService():
 
             with open(report_file, "w") as outputfile:
                 outputfile.write(str(self))
-                outputfile.close
+                outputfile.close()
         else:
             logger.error("Could not save report to destionation {}. Not a directory".format(destination))
             raise RuntimeError("Could not save report!")
