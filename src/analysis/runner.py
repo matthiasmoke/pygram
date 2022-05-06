@@ -143,6 +143,12 @@ class AnalysisRunner():
         counter: int = len(python_files)
         directory_name = os.path.basename(directory)
         type_cache: TypeCache = None
+
+        total_number_of_call_tokens: int = 0
+        number_of_type_inferred_call_tokens: int = 0
+
+        total_number_of_assigns: int = 0
+        number_of_annotated_assigns: int = 0
         print("Starting to tokenize project...\nDetected {} Python files".format(counter))
 
         if typed:
@@ -162,8 +168,26 @@ class AnalysisRunner():
                     tokenizer: TypeTokenizer = TypeTokenizer(path, module_path, type_cache)
                 else:
                     tokenizer: Tokenizer = Tokenizer(path, module_path)
-                file_tokens: List[Tuple(str, int)] = tokenizer.process_file()
+                file_tokens: List[Tuple[str, int]] = tokenizer.process_file()
+
+                if typed:
+                    number_of_type_inferred_call_tokens += tokenizer.number_of_type_inferred_call_tokens
+                    total_number_of_call_tokens += tokenizer.number_of_call_tokens
+                    number_of_annotated_assigns += tokenizer.number_of_ann_assigns
+                    total_number_of_assigns += tokenizer.number_of_assigns
+
                 sequence_list[path_within_project] = file_tokens
+
+        if typed:
+            print("Total number of call tokens: {}".format(total_number_of_call_tokens))
+            print("Number of type inferred call tokens: {}".format(number_of_type_inferred_call_tokens))
+            print("Type inference success: {}\n".format(
+                str(number_of_type_inferred_call_tokens / total_number_of_call_tokens)))
+
+            print("Total number of assigns: {}".format(total_number_of_assigns))
+            print("Number of annotated assigns: {}".format(number_of_annotated_assigns))
+            print("Percentage of annotated variable assignments: {}".format(
+                str(number_of_annotated_assigns / total_number_of_assigns)))
         print("Finished tokenization process")
         return directory_name, sequence_list
     
