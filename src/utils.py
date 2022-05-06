@@ -11,14 +11,11 @@ class Utils:
 
     def __init__(self) -> None:
         self.builtin_functions: List[str] = []
-    
 
     def is_not_a_builtin_function(self, name: str) -> bool:
         if len(self.builtin_functions) == 0:
-            self.builtin_functions = [name for name, obj in vars(builtins).items() 
-                          if isinstance(obj, types.BuiltinFunctionType)]
+            self.builtin_functions = [name for name, obj in vars(builtins).items() if isinstance(obj, types.BuiltinFunctionType)]
         return name not in self.builtin_functions
-    
 
     @staticmethod
     def get_random_string(length: int) -> str:
@@ -76,7 +73,7 @@ class Utils:
         Returns a path with its root being the currently analysed project.
         (Removes its absolute location, like /home/user/...)
         """
-        path_to_remove = os.path.split(path_to_project)[0] + "/"
+        path_to_remove: str = os.path.split(path_to_project)[0] + "/"
         result: str = complete_path.replace(path_to_remove, "")
         return result
     
@@ -86,7 +83,7 @@ class Utils:
         Creates dotted module path from regular file path
         """
         # cut ending of python file
-        path = path[0:(len(path) - 3)]
+        path: str = path[0:(len(path) - 3)]
         # replace slashes with dots 
         path = path.replace("/", ".")
         return path
@@ -94,7 +91,7 @@ class Utils:
     
     @staticmethod
     def get_list_string(list: List[str]) -> str:
-        output = "["
+        output: str = "["
 
         for i in range(0, len(list)):
             value = list[i]

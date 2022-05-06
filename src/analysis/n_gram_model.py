@@ -72,8 +72,8 @@ class NGramModel():
 
     def _calculate_relative_frequency(self, token: str, prefix: str) -> Decimal:
         combined: str = prefix + token
-        combined_count = self.token_count_model.get_token_count(combined)
-        prefix_count = self.token_count_model.get_token_count(prefix)
+        combined_count: int = self.token_count_model.get_token_count(combined)
+        prefix_count: int = self.token_count_model.get_token_count(prefix)
         relative_frequency: Decimal = Decimal(str(combined_count /  prefix_count)).quantize(Decimal('1e-4'))
         return relative_frequency
     
@@ -98,9 +98,9 @@ class NGramModel():
             probabilities["{}|{}".format(current_token, current_prefix)] = probability
 
         for i in range(1, len(sequence)):
-            current_token = sequence[i]
+            current_token: str = sequence[i]
             prob: Decimal = self._calculate_relative_frequency(current_token, current_prefix)
-            probability = probability * prob
+            probability: Decimal = probability * prob
 
             if __debug__:
                 probabilities["{}|{}".format(current_token, current_prefix)] = prob

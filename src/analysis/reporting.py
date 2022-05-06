@@ -27,7 +27,7 @@ class ReportingService():
         if len(self.report) == 0:
             return "Report is empty"
         
-        output = "-------------------- Pygram Report --------------------\n"
+        output: str = "-------------------- Pygram Report --------------------\n"
         output += "Gram Size: {}, Sequence Length: {}, Minimum Token Occurrence: {}\n".format(
             self.language_model.gram_size,
             self.language_model.max_sequence_length,
@@ -62,7 +62,7 @@ class ReportingService():
     
     def save_to_file(self, destination: str, name: str) -> None:
         if os.path.isdir(destination):
-            report_file = os.path.join(destination, "{}.txt".format(name))
+            report_file: str = os.path.join(destination, "{}.txt".format(name))
 
             with open(report_file, "w") as outputfile:
                 outputfile.write(str(self))

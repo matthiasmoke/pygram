@@ -17,7 +17,7 @@ class Pygram:
 
     @staticmethod
     def _create_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(prog="pygram",
+        parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="pygram",
                                         description="N-Gram code analysis for Python projects")
         parser.add_argument("-d", help="Analyse directory")
         parser.add_argument("-t", action="store_true", help="This flag enables processing of type annotations. The type information added to the tokens")
@@ -34,7 +34,7 @@ class Pygram:
     
     @staticmethod
     def _load_token_count_model_from_file(path) -> TokenCountModel:
-        file_path: os.path = os.path.abspath(path)
+        file_path: str = os.path.abspath(path)
         loaded_model: TokenCountModel = None
 
         print("Attempting to load token model...")
