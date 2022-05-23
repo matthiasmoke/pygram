@@ -164,11 +164,11 @@ class AnalysisRunner():
                 path_within_project: str = Utils.get_only_project_path(directory, path)
                 module_path: str = Utils.generate_dotted_module_path(path_within_project)
 
-                if (typed):
+                if typed:
                     tokenizer: TypeTokenizer = TypeTokenizer(path, module_path, type_cache)
                 else:
                     tokenizer: Tokenizer = Tokenizer(path, module_path)
-                file_tokens: List[Tuple[str, int]] = tokenizer.process_file()
+                file_tokens: List[List[Tuple[str, int]]] = tokenizer.process_file()
 
                 if typed:
                     number_of_type_inferred_call_tokens += tokenizer.number_of_type_inferred_call_tokens

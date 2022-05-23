@@ -150,7 +150,7 @@ class TypeTokenizer(Tokenizer):
             module: str = self._type_cache.find_module_for_type_with_function(object_name, function_name)
             token: str = self._construct_call_token(function_name, module=module, object_name=object_name)
             #TODO if module is not found, it means that the object, on which the function is called, 
-            # belongs to an imported type which is not contained in the type cache. Find out where it comes from
+            # belongs to an imported type which is not contained in the type cache.
         else:
             token: str = self._construct_call_token(function_name, type=variable_type)
         self._add_token(tokens, token, node)
