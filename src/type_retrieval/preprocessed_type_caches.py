@@ -50,6 +50,18 @@ class TypeCache:
                 if cache.contains_class_function(type_name, function_name):
                     return module
         return None
+
+    def find_library_module(self, module_name: str) -> str:
+        """
+        Finds an imported third party library that matches the given module
+        """
+        potential_modules: List[str] = self._get_modules_for_name(module_name)
+
+        if len(potential_modules) == 1:
+            return potential_modules[0]
+
+        # more than one match, dont return a module
+        return None
     
     def find_module_for_function(self, function_name):
         """
@@ -83,6 +95,14 @@ class TypeCache:
         if module is not None:
             return module.contains_function(function_name)
         return False
+
+    def _get_modules_not_contained_in_project_cache(self, modules):
+        output: List[str] = []
+
+        for module in modules:
+            if self.modules.get(module, None) is None:
+                output.append(module)
+        return output
     
     def populate_type_info_with_module(self, type_info: TypeInfo) -> None:
         if type_info is None or type_info.fully_qualified_name != "":
@@ -182,7 +202,7 @@ class TypeCache:
                 module_path = path_parts[0]
         return self.modules[module_path].import_cache
     
-    def _get_modules_for_name(self, name: str) -> str:
+    def _get_modules_for_name(self, name: str) -> List[str]:
         """
         Retruns the modules that contain the given class/function name.
         """
@@ -201,6 +221,9 @@ class TypeCache:
                 # only append module that contains a function with that name if there are no other modules yet
                 if len(potential_modules) < 1:
                     potential_modules.append(module)
+
+        if len(potential_modules) == 0:
+            potential_modules = self._get_modules_not_contained_in_project_cache(modules)
         
         return potential_modules
 

@@ -74,7 +74,7 @@ class TypeTokenizer(Tokenizer):
         self._variable_cache.leave_class_scope()
         return class_tokens
 
-    def _process_function_def(self, node) -> List[Tuple[str, int]]:
+    def _process_function_def(self, node: FunctionDef) -> List[Tuple[str, int]]:
         tokens: List[str, int] = []
         self._variable_cache.set_function_scope(node.name)
         if isinstance(node, AsyncFunctionDef):
@@ -150,9 +150,16 @@ class TypeTokenizer(Tokenizer):
         # if variable type is not found, check if the method is called on a class directly
         if variable_type is None:
             module: str = self._type_cache.find_module_for_type_with_function(object_name, function_name)
+
+            if module is None:
+                module = self._type_cache.find_library_module(object_name)
+
+                # if module is still None, check for third party library
+                if module is not None:
+                    module = object_name
+                    object_name = None
+
             token: str = self._construct_call_token(function_name, module=module, object_name=object_name)
-            # TODO if module is not found, it means that the object, on which the function is called,
-            # belongs to an imported type which is not contained in the type cache.
         else:
             token: str = self._construct_call_token(function_name, token_type=variable_type)
         self._add_token(tokens, token, node)
