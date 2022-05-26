@@ -31,9 +31,6 @@ class Pygram:
         parser.add_argument("--sequence-length",
                             help="Set sequence length for the sequences used in the n-gram model. Standard value is 6")
         parser.add_argument("--reporting-size", help="Set reporting size. Standard value is 10")
-        parser.add_argument("--deactivate-token-line-numbers",
-                            help="Removes the line numbers for the tokens. Also in the saved token count model. This option makes the count model invalid for the analysis",
-                            action="store_true")
 
         return parser
 
@@ -119,9 +116,6 @@ class Pygram:
                 path, name = arguments.save_model
                 if not self._set_token_model_save_parameters(path, name):
                     return
-
-            if arguments.deactivate_token_line_numbers:
-                self.config.save_token_line_numbers = False
 
             if arguments.d is not None:
                 if self.token_count_model is not None:

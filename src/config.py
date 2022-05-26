@@ -1,4 +1,3 @@
-
 import os
 import logging
 import json
@@ -12,7 +11,6 @@ CONFIG_OPTS: List[str] = [
     "sequence_length",
     "minimum_token_occurrence",
     "reporting_size",
-    "save_token_line_numbers",
     "do_analysis_run"
 ]
 
@@ -26,17 +24,18 @@ RUNNER_CONFIG_OPTS: List[str] = [
     "untyped"
 ]
 
-class RunnerConfig():
 
-    def __init__(self, 
-    sequence_lengths: List[int], 
-    gram_sizes: List[int],
-    minimum_token_occurrences: List[int],
-    report_name_prefix: str,
-    typed: bool,
-    untyped: bool,
-    analysis_result_folder: str,
-    ) -> None:
+class RunnerConfig:
+
+    def __init__(self,
+                 sequence_lengths: List[int],
+                 gram_sizes: List[int],
+                 minimum_token_occurrences: List[int],
+                 report_name_prefix: str,
+                 typed: bool,
+                 untyped: bool,
+                 analysis_result_folder: str,
+                 ) -> None:
         self.sequence_lengths: List[int] = sequence_lengths
         self.gram_sizes: List[int] = gram_sizes
         self.minimum_token_occurrences: List[int] = minimum_token_occurrences
@@ -44,15 +43,14 @@ class RunnerConfig():
         self.typed: bool = typed
         self.untyped: bool = untyped
         self.analysis_result_folder: str = analysis_result_folder
-    
 
     @staticmethod
     def config_file_is_valid(json_config):
         for option in RUNNER_CONFIG_OPTS:
-             if option not in json_config:
-                 return False
+            if option not in json_config:
+                return False
         return True
-    
+
     @staticmethod
     def from_json(json_config) -> "RunnerConfig":
         if RunnerConfig.config_file_is_valid(json_config):
@@ -67,27 +65,26 @@ class RunnerConfig():
             )
             return new_config
 
+
 class Config:
 
-    def __init__(self, 
-    use_type_info: bool = False,
-    gram_size: int = 3,
-    sequence_length: int = 4,
-    minimum_token_occurrence: int = 3,
-    reporting_size: int = 10,
-    save_token_line_numbers: bool = True,
-    do_analysis_run: bool = False,
-    analysis_run: RunnerConfig = None
-    ) -> None:
+    def __init__(self,
+                 use_type_info: bool = False,
+                 gram_size: int = 3,
+                 sequence_length: int = 4,
+                 minimum_token_occurrence: int = 3,
+                 reporting_size: int = 10,
+                 do_analysis_run: bool = False,
+                 analysis_run: RunnerConfig = None
+                 ) -> None:
         self.use_type_info: bool = use_type_info
         self.gram_size: int = gram_size
         self.sequence_length: int = sequence_length
         self.minimum_token_occurrence: int = minimum_token_occurrence
         self.reporting_size: int = reporting_size
-        self.save_token_line_numbers: bool = save_token_line_numbers
         self.do_analysis_run: bool = do_analysis_run
         self.analysis_run: RunnerConfig = analysis_run
-    
+
     @staticmethod
     def load_from_file(file_path: str) -> "Config":
         if os.path.isfile(file_path):
@@ -97,7 +94,7 @@ class Config:
                 if Config.config_file_is_valid(config):
                     runner_config: RunnerConfig = None
                     if "analysis_run" in config:
-                        runner_config = RunnerConfig.from_json(config["analysis_run"]) 
+                        runner_config = RunnerConfig.from_json(config["analysis_run"])
                     new_config = Config(
                         use_type_info=config["use_type_info"],
                         gram_size=config["gram_size"],
@@ -115,13 +112,10 @@ class Config:
         else:
             logger.error("Specified config ist not a file")
             raise FileNotFoundError()
-                    
-    
+
     @staticmethod
     def config_file_is_valid(json_config):
         for option in CONFIG_OPTS:
-             if option not in json_config:
-                 return False
+            if option not in json_config:
+                return False
         return True
-
-    

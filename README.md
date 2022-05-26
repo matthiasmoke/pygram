@@ -36,7 +36,6 @@ Pygram is also configurable via a config file:
         "minimum_token_occurrence": 3,
         "reporting_size": 10,
         "token_count_model_name": "",
-        "save_token_line_numbers": true,
         "do_analysis_run": true,
         "analysis_run": {
             "analysis_result_folder": "",
