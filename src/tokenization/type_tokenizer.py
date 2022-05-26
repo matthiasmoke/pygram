@@ -28,6 +28,7 @@ from .tokenizer import Tokenizer
 
 logger = logging.getLogger("main")
 
+
 class TypeTokenizer(Tokenizer):
 
     def __init__(self, filepath, module_name, type_cache: TypeCache) -> None:
@@ -48,13 +49,13 @@ class TypeTokenizer(Tokenizer):
                 return tree
         return None
 
-    def _process_class_def(self, node: ClassDef, module_tokens: List[Tuple[str, int]]) -> List[Tuple[str, int]]:
+    def _process_class_def(self, node: ClassDef, module_tokens: List[Tuple[str, int]]) -> List[List[Tuple[str, int]]]:
         """
         Creates sequences for every function definition inside a class definition. 
         Nodes which are not contained inside a function def are added to the module sequence.
         Changes the current variable cache scope to the currently processed class
         """
-        class_tokens: List[Tuple[str, int]] = []
+        class_tokens: List[List[Tuple[str, int]]] = []
         # create cache for class and add self type
         self._variable_cache.set_class_scope(node.name)
         class_type: TypeInfo = TypeInfo(label=node.name)
@@ -72,13 +73,13 @@ class TypeTokenizer(Tokenizer):
                 self._classify_and_process_node(child, module_tokens)
         self._variable_cache.leave_class_scope()
         return class_tokens
-    
+
     def _process_function_def(self, node) -> List[Tuple[str, int]]:
         tokens: List[str, int] = []
         self._variable_cache.set_function_scope(node.name)
         if isinstance(node, AsyncFunctionDef):
             self._add_token(tokens, Tokens.ASYNC.value, node)
-        
+
         # save function arguments to variable cache
         self._process_arguments(node.args)
         self._add_token(tokens, Tokens.DEF.value, node)
@@ -86,12 +87,12 @@ class TypeTokenizer(Tokenizer):
         self._add_token(tokens, Tokens.END_DEF.value, node)
         self._variable_cache.leave_function_scope()
         return tokens
-    
+
     def _process_call(self, node: Call, tokens: List[Tuple[str, int]]) -> None:
-        
+
         if len(node.args):
             self._search_node_body(node.args, tokens)
-        
+
         token: str = "UNKNOWN"
         function_name: str = ""
 
@@ -100,7 +101,8 @@ class TypeTokenizer(Tokenizer):
             self._process_standalone_function(function_name, tokens, node)
         elif isinstance(node.func, Attribute):
             attribute: Attribute = node.func
-            if isinstance(attribute.value, Subscript) or isinstance(attribute.value, Name) or isinstance(attribute.value, Attribute):
+            if isinstance(attribute.value, Subscript) or isinstance(attribute.value, Name) or isinstance(
+                    attribute.value, Attribute):
                 self._process_call_on_object(attribute, tokens)
             elif isinstance(attribute.value, Constant):
                 function_name = attribute.attr
@@ -110,7 +112,7 @@ class TypeTokenizer(Tokenizer):
                 self._process_subsequent_call(attribute, tokens)
             else:
                 logger.error("Unable to determine Attribute type on Call in module {}, line {}"
-                .format(self.module_path, attribute.lineno))
+                             .format(self.module_path, attribute.lineno))
         elif isinstance(node.func, Call):
             self._process_call(node.func, tokens)
         elif isinstance(node.func, Subscript):
@@ -121,14 +123,14 @@ class TypeTokenizer(Tokenizer):
             self._process_standalone_function(function_name, tokens, node)
         else:
             logger.error("Unable to determine method name in module {} in line {}"
-            .format(self.module_path, node.lineno))   
-    
+                         .format(self.module_path, node.lineno))
+
     def _process_standalone_function(self, function_name: str, tokens: List[Tuple[str, int]], node: Call) -> None:
         module: str = self._type_cache.find_module_for_function(function_name)
         token: str = self._construct_call_token(function_name, module=module)
         self._add_token(tokens, token, node)
 
-    def _process_call_on_object(self, node: Attribute, tokens: List[Tuple[str, int]]) -> None: 
+    def _process_call_on_object(self, node: Attribute, tokens: List[Tuple[str, int]]) -> None:
         """
         Processes a function call which happens on an object
         """
@@ -143,44 +145,43 @@ class TypeTokenizer(Tokenizer):
             object_name = node.value.id
         elif isinstance(node.value, Attribute):
             object_name = Utils.get_full_name_from_attribute_node(node.value)
-        
+
         variable_type: TypeInfo = self._variable_cache.get_variable_type(object_name, subscript_depth, subscript_index)
         # if variable type is not found, check if the method is called on a class directly
         if variable_type is None:
             module: str = self._type_cache.find_module_for_type_with_function(object_name, function_name)
             token: str = self._construct_call_token(function_name, module=module, object_name=object_name)
-            #TODO if module is not found, it means that the object, on which the function is called, 
+            # TODO if module is not found, it means that the object, on which the function is called,
             # belongs to an imported type which is not contained in the type cache.
         else:
-            token: str = self._construct_call_token(function_name, type=variable_type)
+            token: str = self._construct_call_token(function_name, token_type=variable_type)
         self._add_token(tokens, token, node)
-    
+
     def _process_subsequent_call(self, node: Attribute, tokens: List[Tuple[str, int]]) -> None:
         """
         Processes a subsequent call, meaning a function call which happens on the return type of another function call
         """
         function_name: str = node.attr
         self._process_call(node.value, tokens)
-        prev_function_name, prev_module =  self._retrieve_module_and_function_from_token(tokens[-1][0])
+        prev_function_name, prev_module = self._retrieve_module_and_function_from_token(tokens[-1][0])
         return_type: TypeInfo = self._type_cache.get_return_type(prev_function_name, module=prev_module)
-        token: str = self._construct_call_token(function_name, type=return_type)
+        token: str = self._construct_call_token(function_name, token_type=return_type)
         self._add_token(tokens, token, node)
 
     def _process_arguments(self, node: arguments) -> None:
-            """
+        """
             Adds annotated function arguments to variable cache
             """
-            for child in node.args:
-                if isinstance(child, arg):
-                    if child.annotation is not None:
-                        info: TypeInfo = TypeInfo(child.annotation)
-                        self._type_cache.populate_type_info_with_module(info)
-                        name: str = child.arg
-                        self._variable_cache.add_variable(name, info)
-                else:
-                    logger.error("Unknown argument node type in line {}".format(node.lineno))
+        for child in node.args:
+            if isinstance(child, arg):
+                if child.annotation is not None:
+                    info: TypeInfo = TypeInfo(child.annotation)
+                    self._type_cache.populate_type_info_with_module(info)
+                    name: str = child.arg
+                    self._variable_cache.add_variable(name, info)
+            else:
+                logger.error("Unknown argument node type in line {}".format(node.lineno))
 
-    
     def _retrieve_module_and_function_from_token(self, token_string: str) -> Tuple[str, str]:
         """
         Returns a tuple which contains (function name, module)
@@ -193,9 +194,10 @@ class TypeTokenizer(Tokenizer):
         if len(token_parts) > 1:
             module_path = token_string[0:len(token_string) - len(function_name) - 3]
 
-        return (function_name, module_path)
+        return function_name, module_path
 
-    def _construct_call_token(self, function_name: str, module: str = None, object_name: str = None, type: TypeInfo = None) -> str:
+    def _construct_call_token(self, function_name: str, module: str = None, object_name: str = None,
+                              token_type: TypeInfo = None) -> str:
         """
         Builds the call token out of the function name, and either the module and optionally the object name or just the type information
         """
@@ -209,16 +211,16 @@ class TypeTokenizer(Tokenizer):
             type_inferred = True
         # elif module is None and object_name is not None:
         #     token = "{}.{}".format(str(object_name), token)
-        elif type is not None:
+        elif token_type is not None:
             type_inferred = True
-            token = "{}.{}".format(str(type), token)
+            token = "{}.{}".format(str(token_type), token)
 
         self.number_of_call_tokens += 1
         if type_inferred:
             self.number_of_type_inferred_call_tokens += 1
 
         return token
-    
+
     def _get_origin_of_subscript(self, node: Subscript, depth: int) -> Tuple[str, int]:
         """
         Returns the name of the List/Dict/Tuple/etc that contains the object on which the method call happens.
@@ -235,9 +237,9 @@ class TypeTokenizer(Tokenizer):
             origin_name = Utils.get_full_name_from_attribute_node(value)
         else:
             logger.error("Unable to determine origin name of Subscript in module {}"
-            .format(self.module_path))
+                         .format(self.module_path))
         return origin_name, depth
-    
+
     def _get_index_of_subscript(self, node: Subscript) -> int:
         """
         Returns the index of the Dict / Tuple object on which the method call happens
@@ -254,8 +256,7 @@ class TypeTokenizer(Tokenizer):
         except TypeError:
             return 1
         return index
-            
-    
+
     def _process_for_block(self, node: For, tokens: List[Tuple[str, int]]):
         self._add_token(tokens, Tokens.FOR.value, node)
 
@@ -265,13 +266,13 @@ class TypeTokenizer(Tokenizer):
             self._process_call(node.iter, tokens)
         else:
             logger.error("Error, unknown iter type of For node in module {}".format(self.module_path))
-        
+
         self._search_node_body(node.body, tokens)
         if len(node.orelse):
             self._add_token(tokens, Tokens.ELSE.value, node)
             self._search_node_body(node.orelse, tokens)
         self._add_token(tokens, Tokens.END_FOR.value, node)
-    
+
     def _cache_variables_in_for_block(self, node: For) -> None:
         """
         Caches variables and their respective types which are used in a for block
@@ -299,8 +300,9 @@ class TypeTokenizer(Tokenizer):
             elif isinstance(node.iter, Subscript):
                 iter_name, subscript_depth = self._get_origin_of_subscript(node.iter, subscript_depth)
                 subscript_index = self._get_index_of_subscript(node.iter)
-            
-            variable_type: TypeInfo = self._variable_cache.get_variable_type(iter_name, subscript_depth, subscript_index)
+
+            variable_type: TypeInfo = self._variable_cache.get_variable_type(iter_name, subscript_depth,
+                                                                             subscript_index)
             self._variable_cache.add_variable(target_name, variable_type)
 
     def _get_variable_name_for_assignment(self, node) -> str:
@@ -312,26 +314,22 @@ class TypeTokenizer(Tokenizer):
         else:
             variable_name = "UNKNOWN"
             logger.error("Error, could not retrieve variable name for Ann/Assign node in {}"
-            .format(self.module_path))
+                         .format(self.module_path))
         return variable_name
 
     def _process_assign(self, node: _ast.Assign, tokens: List[Tuple[str, int]]):
+        variable_name: str = ""
+
         if hasattr(node, "target"):
             variable_name: str = self._get_variable_name_for_assignment(node.target)
         elif hasattr(node, "targets"):
             variable_name: str = self._get_variable_name_for_assignment(node.targets[0])
 
-        if isinstance(node.value, Call):
-            self._process_call(node.value, tokens)
-            logger.warning("Un-annotated assignment for a variable in module {}"
-            .format(variable_name, self.module_path))
-        elif isinstance(node.value, Constant):
-            logger.warning("Un-annotated assignment for variable [{}] with constant value in module {}, lineno: {}"
-            .format(variable_name, self.module_path, node.lineno))
+        logger.warning("Un-annotated assignment for a variable in module {}"
+                       .format(variable_name, self.module_path))
 
         if not isinstance(node, AugAssign):
             self.number_of_assigns += 1
-
 
     def _process_ann_assign(self, node: AnnAssign, tokens: List[Tuple[str, int]]):
         try:

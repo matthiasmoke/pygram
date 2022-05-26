@@ -1,7 +1,7 @@
 # Pygram
 
 Pygram is a tool that let's you perform an n-gram model analysis on Python projects to find code sequences with potential bugs.
-For usage information run ``python pygram.py -h``
+For usage information run ``python main.py -h``
 
 ## Command line parameters
 Possible command line parameters:
