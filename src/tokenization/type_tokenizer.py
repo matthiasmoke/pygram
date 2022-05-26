@@ -154,7 +154,7 @@ class TypeTokenizer(Tokenizer):
             if module is None:
                 module = self._type_cache.find_library_module(object_name)
 
-                # if module is still None, check for third party library
+                # use invoking object name (e.g. os.path) as module name
                 if module is not None:
                     module = object_name
                     object_name = None
