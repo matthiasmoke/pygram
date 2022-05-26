@@ -18,7 +18,7 @@ from ..tokenization.type_tokenizer import TypeTokenizer
 logger = logging.getLogger("main")
 
 
-class AnalysisRunner():
+class AnalysisRunner:
 
     def __init__(
         self,
@@ -65,7 +65,8 @@ class AnalysisRunner():
 
     def do_analysis_run(self, token_count_model: TokenCountModel) -> None:
         """
-        Runs the analysis for a specified token count model by creating n-gram models for every combination of the specified parameters
+        Runs the analysis for a specified token count model by creating n-gram models
+        for every combination of the specified parameters
         """
         gram_sizes: List[int] = self.config.gram_sizes
         sequence_lengths: List[int] = self.config.sequence_lengths
@@ -82,7 +83,8 @@ class AnalysisRunner():
                             sequence_length,
                             min_token_count
                         )
-                        report: ReportingService = AnalysisRunner.create_report(token_count_model, gram_model, self.reporting_size)
+                        report: ReportingService = AnalysisRunner.create_report(token_count_model, gram_model,
+                                                                                self.reporting_size)
                         self.save_report(report)
 
     def save_report(self, report: ReportingService):
@@ -138,7 +140,7 @@ class AnalysisRunner():
         """
         Tokenises a specified project 
         """
-        sequence_list: Dict[str, List[Tuple[str, int]]] = {}
+        sequence_list: Dict[str, List[List[Tuple[str, int]]]] = {}
         python_files = Utils.get_all_python_files_in_directory(directory)
         counter: int = len(python_files)
         directory_name = os.path.basename(directory)
@@ -192,7 +194,7 @@ class AnalysisRunner():
         return directory_name, sequence_list
     
     @staticmethod
-    def create_and_save_count_model(project_name: str, sequences: Dict, save_path: str=None) -> TokenCountModel:
+    def create_and_save_count_model(project_name: str, sequences: Dict, save_path: str = None) -> TokenCountModel:
         print("Building token count model...")
         count_model: TokenCountModel = TokenCountModel(sequences, name=project_name)
         count_model.build()
@@ -203,7 +205,8 @@ class AnalysisRunner():
         return count_model
     
     @staticmethod
-    def build_n_gram_model(token_count_model: TokenCountModel, gram_size: int, sequence_length: int, min_token_count: int) -> NGramModel:
+    def build_n_gram_model(token_count_model: TokenCountModel, gram_size: int,
+                           sequence_length: int, min_token_count: int) -> NGramModel:
         print("Building n-gram model. Gram-size: {}, Sequence length: {}, Min. token count: {}"
         .format(gram_size, sequence_length, min_token_count))
 
@@ -218,7 +221,8 @@ class AnalysisRunner():
         return model
 
     @staticmethod
-    def create_report(token_count_model: TokenCountModel, gram_model: NGramModel, reporting_size: int) -> ReportingService:
+    def create_report(token_count_model: TokenCountModel, gram_model: NGramModel,
+                      reporting_size: int) -> ReportingService:
         print("Generating Report...")
         report: ReportingService = ReportingService(gram_model, token_count_model.get_sequence_dict(), reporting_size)
         report.generate_report()
