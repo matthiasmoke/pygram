@@ -328,6 +328,9 @@ class TypeTokenizer(Tokenizer):
         logger.warning("Un-annotated assignment for a variable in module {}"
                        .format(variable_name, self.module_path))
 
+        if hasattr(node, "value"):
+            self._classify_and_process_node(node.value, tokens)
+
         if not isinstance(node, AugAssign):
             self.number_of_assigns += 1
 
