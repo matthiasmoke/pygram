@@ -55,7 +55,7 @@ class TypeCache:
         """
         Finds an imported third party library that matches the given module
         """
-        potential_modules: List[str] = self._get_modules_for_name(module_name)
+        potential_modules: List[str] = self._get_modules_for_name(module_name, third_party=True)
 
         if len(potential_modules) == 1:
             return potential_modules[0]
@@ -202,7 +202,7 @@ class TypeCache:
                 module_path = path_parts[0]
         return self.modules[module_path].import_cache
     
-    def _get_modules_for_name(self, name: str) -> List[str]:
+    def _get_modules_for_name(self, name: str, third_party: bool = False) -> List[str]:
         """
         Retruns the modules that contain the given class/function name.
         """
@@ -222,7 +222,7 @@ class TypeCache:
                 if len(potential_modules) < 1:
                     potential_modules.append(module)
 
-        if len(potential_modules) == 0:
+        if third_party and len(potential_modules) == 0:
             potential_modules = self._get_modules_not_contained_in_project_cache(modules)
         
         return potential_modules
